@@ -1,10 +1,7 @@
 <template>
   <div class="settings-page">
     <el-card>
-      <template #header>
-        <span>{{ t('settings.title') }}</span>
-      </template>
-      <el-tabs v-model="activeTab">
+      <el-tabs v-model="activeTab" class="settings-tabs">
         <!-- 基本设置 -->
         <el-tab-pane :label="t('settings.basic')" name="basic">
           <el-form :model="basicForm" label-width="120px" style="max-width: 600px">
@@ -886,10 +883,24 @@ function handleSubmitWorkflow() {
 </script>
 
 <style scoped>
+.settings-page {
+  padding: 0;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
 .toolbar {
   display: flex;
   gap: 12px;
   margin-bottom: 16px;
+}
+
+.settings-tabs :deep(.el-tabs__content) {
+  padding-top: 20px;
 }
 
 .color-preview {

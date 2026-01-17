@@ -1,14 +1,7 @@
 <template>
   <div class="environment-page">
     <el-card>
-      <template #header>
-        <div class="page-header">
-          <span>测试环境管理</span>
-          <el-button type="primary" :icon="Plus" @click="handleCreateEnv">新建环境</el-button>
-        </div>
-      </template>
-
-      <el-tabs v-model="activeTab" @tab-change="handleTabChange">
+      <el-tabs v-model="activeTab" class="env-tabs" @tab-change="handleTabChange">
         <el-tab-pane label="环境列表" name="list">
           <div class="toolbar">
             <el-input
@@ -25,6 +18,7 @@
               <el-option label="生产环境" value="production" />
             </el-select>
             <div style="flex: 1"></div>
+            <el-button type="primary" :icon="Plus" @click="handleCreateEnv">新建环境</el-button>
           </div>
 
           <el-table :data="envList" style="width: 100%">
@@ -389,15 +383,28 @@ onMounted(() => {
 </script>
 
 <style scoped>
+.environment-page {
+  padding: 0;
+}
+
 .page-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
+.header-actions {
+  display: flex;
+  gap: 8px;
+}
+
 .toolbar {
   display: flex;
   gap: 12px;
   margin-bottom: 16px;
+}
+
+.env-tabs :deep(.el-tabs__content) {
+  padding-top: 20px;
 }
 </style>

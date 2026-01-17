@@ -1,14 +1,7 @@
 <template>
   <div class="report-page">
     <el-card>
-      <template #header>
-        <div class="page-header">
-          <span>测试报告</span>
-          <el-button type="primary" :icon="Plus" @click="handleCreate">生成报告</el-button>
-        </div>
-      </template>
-
-      <el-tabs v-model="activeTab">
+      <el-tabs v-model="activeTab" class="report-tabs">
         <el-tab-pane label="报告列表" name="list">
           <div class="toolbar">
             <el-input v-model="searchForm.keyword" placeholder="搜索报告" clearable style="width: 200px" @change="loadReports" />
@@ -18,6 +11,7 @@
               <el-option label="趋势报告" value="trend" />
             </el-select>
             <div style="flex: 1"></div>
+            <el-button type="primary" :icon="Plus" @click="handleCreate">生成报告</el-button>
           </div>
 
           <el-table :data="reportList" style="width: 100%">
@@ -103,7 +97,7 @@
         <el-tab-pane label="报告模板" name="templates">
           <div class="toolbar">
             <div style="flex: 1"></div>
-            <el-button type="primary" :icon="'Plus'" @click="handleCreateTemplate">新建模板</el-button>
+            <el-button type="primary" :icon="Plus" @click="handleCreateTemplate">新建模板</el-button>
           </div>
           <el-table :data="templateList" style="width: 100%">
             <el-table-column prop="name" label="模板名称" />
@@ -281,6 +275,14 @@ function handleCreateTemplate() {
   ElMessage.info('新建模板功能开发中...')
 }
 
+function handleEditTemplate(row) {
+  ElMessage.info('编辑模板功能开发中...')
+}
+
+function handleDeleteTemplate(row) {
+  ElMessage.info('删除模板功能开发中...')
+}
+
 function handleView(row) {
   currentReport.value = row
   detailDialogVisible.value = true
@@ -375,15 +377,28 @@ onMounted(() => {
 </script>
 
 <style scoped>
+.report-page {
+  padding: 0;
+}
+
 .page-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
+.header-actions {
+  display: flex;
+  gap: 8px;
+}
+
 .toolbar {
   display: flex;
   gap: 12px;
   margin-bottom: 16px;
+}
+
+.report-tabs :deep(.el-tabs__content) {
+  padding-top: 20px;
 }
 </style>

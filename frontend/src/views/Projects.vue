@@ -1,49 +1,39 @@
 <template>
-  <div class="projects-container">
-    <!-- 页面头部 -->
-    <div class="page-header">
-      <h2>{{ t('project.title') }}</h2>
-      <el-button type="primary" @click="showCreateDialog">
-        <el-icon><Plus /></el-icon>
-        {{ t('common.create') }}
-      </el-button>
-    </div>
+  <div class="projects-page">
+    <el-card>
+      <div class="toolbar">
+        <el-input
+          v-model="searchForm.keyword"
+          :placeholder="t('common.search')"
+          clearable
+          @change="fetchProjects"
+          style="width: 200px"
+        >
+          <template #prefix>
+            <el-icon><Search /></el-icon>
+          </template>
+        </el-input>
 
-    <!-- 搜索栏 -->
-    <div class="search-bar">
-      <el-input
-        v-model="searchForm.keyword"
-        :placeholder="t('common.search')"
-        clearable
-        @change="fetchProjects"
-        style="width: 200px"
-      >
-        <template #prefix>
-          <el-icon><Search /></el-icon>
-        </template>
-      </el-input>
+        <el-select
+          v-model="searchForm.status"
+          :placeholder="t('project.status')"
+          clearable
+          @change="fetchProjects"
+          style="width: 150px"
+        >
+          <el-option :label="t('project.statusActive')" value="active" />
+          <el-option :label="t('project.statusArchived')" value="archived" />
+          <el-option :label="t('project.statusCompleted')" value="completed" />
+        </el-select>
 
-      <el-select
-        v-model="searchForm.status"
-        :placeholder="t('project.status')"
-        clearable
-        @change="fetchProjects"
-        style="width: 150px"
-      >
-        <el-option :label="t('project.statusActive')" value="active" />
-        <el-option :label="t('project.statusArchived')" value="archived" />
-        <el-option :label="t('project.statusCompleted')" value="completed" />
-      </el-select>
+        <div style="flex: 1"></div>
+        <el-button type="primary" :icon="Plus" @click="showCreateDialog">
+          {{ t('common.create') }}
+        </el-button>
+      </div>
 
-      <div style="flex: 1"></div>
-    </div>
-
-    <!-- 项目列表 -->
-    <div class="table-container">
-      <el-table
-        v-loading="loading"
-        :data="projectList"
-      >
+      <!-- 项目列表 -->
+      <el-table v-loading="loading" :data="projectList" style="width: 100%">
         <el-table-column prop="name" :label="t('project.name')" min-width="200">
           <template #default="{ row }">
             <div class="project-name">
@@ -129,10 +119,8 @@
           </template>
         </el-table-column>
       </el-table>
-    </div>
 
-    <!-- 分页 -->
-    <div class="pagination-container">
+      <!-- 分页 -->
       <el-pagination
         v-model:current-page="pagination.page"
         v-model:page-size="pagination.per_page"
@@ -141,8 +129,9 @@
         layout="total, sizes, prev, pager, next, jumper"
         @size-change="fetchProjects"
         @current-change="fetchProjects"
+        style="margin-top: 20px; justify-content: flex-end"
       />
-    </div>
+    </el-card>
 
     <!-- 创建/编辑对话框 -->
     <el-dialog
@@ -150,6 +139,7 @@
       :title="dialogMode === 'create' ? t('common.create') : t('common.edit')"
       width="600px"
       @close="handleDialogClose"
+      destroy-on-close
     >
       <el-form
         ref="formRef"
@@ -242,13 +232,11 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus, Search, RefreshLeft, Edit, Delete } from '@element-plus/icons-vue'
+import { Plus, Search, Edit, Delete } from '@element-plus/icons-vue'
 import { projectApi } from '@/api/project'
 import { useI18n } from '@/i18n'
-import { useAppStore } from '@/store'
 
 const { t } = useI18n()
-const appStore = useAppStore()
 
 // 数据
 const loading = ref(false)
@@ -423,56 +411,25 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.projects-container {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-  background: #f5f7fa;
-  min-height: 100%;
+.projects-page {
+  padding: 0;
 }
 
 .page-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16px;
-  background: #fff;
-  border-radius: 4px;
 }
 
-.page-header h2 {
-  margin: 0;
-  font-size: 16px;
-  font-weight: 500;
-  color: #303133;
-}
-
-.search-bar {
+.header-actions {
   display: flex;
-  align-items: center;
+  gap: 8px;
+}
+
+.toolbar {
+  display: flex;
   gap: 12px;
-  padding: 16px;
-  background: #fff;
-  border-radius: 4px;
-  flex-wrap: wrap;
-}
-
-.search-input {
-  width: 300px;
-}
-
-.search-select {
-  width: 150px;
-}
-
-.table-container {
-  background: #fff;
-  border-radius: 4px;
-  padding: 16px;
-}
-
-.data-table {
-  width: 100%;
+  margin-bottom: 16px;
 }
 
 .project-name {
@@ -492,13 +449,5 @@ onMounted(() => {
   font-weight: 500;
   font-size: 14px;
   flex-shrink: 0;
-}
-
-.pagination-container {
-  display: flex;
-  justify-content: flex-end;
-  padding: 16px;
-  background: #fff;
-  border-radius: 4px;
 }
 </style>

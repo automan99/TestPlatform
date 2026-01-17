@@ -56,13 +56,6 @@
       <!-- 右侧内容区 -->
       <div class="content-area">
         <el-card>
-          <template #header>
-            <div class="page-header">
-              <span>{{ currentFolderName }}</span>
-              <el-button type="primary" @click="handleCreate">新建计划</el-button>
-            </div>
-          </template>
-
           <div class="toolbar">
             <el-input
               v-model="searchForm.keyword"
@@ -78,6 +71,7 @@
               <el-option label="已取消" value="cancelled" />
             </el-select>
             <div style="flex: 1"></div>
+            <el-button type="primary" :icon="Plus" @click="handleCreate">新建计划</el-button>
           </div>
 
           <el-table :data="planList" style="width: 100%">

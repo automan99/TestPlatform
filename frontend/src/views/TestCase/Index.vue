@@ -56,15 +56,6 @@
       <!-- 右侧内容区 -->
       <div class="content-area">
         <el-card>
-          <template #header>
-            <div class="page-header">
-              <span>{{ currentSuiteName }}</span>
-              <div class="header-actions">
-                <el-button type="primary" :icon="Plus" @click="handleCreateCase">新建用例</el-button>
-              </div>
-            </div>
-          </template>
-
           <div class="toolbar">
             <el-input
               v-model="searchForm.keyword"
@@ -85,6 +76,7 @@
               <el-option label="归档" value="archived" />
             </el-select>
             <div style="flex: 1"></div>
+            <el-button type="primary" :icon="Plus" @click="handleCreateCase">新建用例</el-button>
             <el-button
               v-if="selectedCases.length > 0"
               type="danger"

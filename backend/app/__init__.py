@@ -7,11 +7,15 @@ from flask_migrate import Migrate
 from flask_cors import CORS
 from flask_restx import Api
 import os
+import logging
 
 # 初始化扩展
 db = SQLAlchemy()
 migrate = Migrate()
 cors = CORS()
+
+# 配置日志
+logger = logging.getLogger(__name__)
 
 
 def create_app(config_name=None):
@@ -74,4 +78,45 @@ def create_app(config_name=None):
             except (ValueError, IndexError):
                 pass  # token格式错误，忽略
 
+    # 自动运行数据库迁移
+    with app.app_context():
+        auto_upgrade_database()
+
     return app
+
+
+def auto_upgrade_database():
+    """自动升级数据库到最新版本"""
+    try:
+        from alembic.config import Config
+        from alembic import command
+
+        # 获取迁移目录的绝对路径
+        migrations_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'migrations')
+
+        # 检查迁移目录是否存在
+        if not os.path.exists(migrations_dir):
+            logger.info("Migrations directory not found, skipping auto-upgrade")
+            return
+
+        # 配置alembic
+        alembic_cfg = Config()
+        alembic_cfg.set_main_option('sqlalchemy.url', db.engine.url.render_as_string(hide_password=False))
+        alembic_cfg.set_main_option('script_location', migrations_dir)
+
+        # 获取当前版本
+        try:
+            current = command.current(alembic_cfg)
+            logger.info(f"Current database version: {current}")
+        except Exception:
+            current = None
+            logger.info("No database version found, this may be a new database")
+
+        # 升级到最新版本
+        command.upgrade(alembic_cfg, 'head')
+        logger.info("Database auto-upgrade completed successfully")
+
+    except Exception as e:
+        logger.error(f"Database auto-upgrade failed: {e}")
+        # 不抛出异常，允许应用继续运行
+

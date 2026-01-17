@@ -55,15 +55,6 @@
       <!-- 右侧内容区 -->
       <div class="content-area">
         <el-card>
-          <template #header>
-            <div class="page-header">
-              <span>{{ currentModuleName }}</span>
-              <div class="header-actions">
-                <el-button type="primary" :icon="Plus" @click="handleCreate">新建缺陷</el-button>
-              </div>
-            </div>
-          </template>
-
           <div class="toolbar">
             <el-input v-model="searchForm.keyword" placeholder="搜索缺陷" clearable style="width: 200px" @change="loadDefects" />
             <el-select v-model="searchForm.severity" placeholder="严重程度" clearable @change="loadDefects">
@@ -86,6 +77,7 @@
               <el-option label="已关闭" value="closed" />
             </el-select>
             <div style="flex: 1"></div>
+            <el-button type="primary" :icon="Plus" @click="handleCreate">新建缺陷</el-button>
           </div>
 
           <el-table :data="defectList" style="width: 100%">
