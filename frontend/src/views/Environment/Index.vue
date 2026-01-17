@@ -44,11 +44,23 @@
               </template>
             </el-table-column>
             <el-table-column prop="resources_count" label="资源数" width="100" />
-            <el-table-column label="操作" width="200" fixed="right">
+            <el-table-column label="操作" width="140" fixed="right">
               <template #default="{ row }">
-                <el-button type="primary" link size="small" @click="handleViewResources(row)">资源</el-button>
-                <el-button type="primary" link size="small" @click="handleEditEnv(row)">编辑</el-button>
-                <el-button type="danger" link size="small" @click="handleDeleteEnv(row)">删除</el-button>
+                <el-tooltip content="资源" placement="top">
+                  <el-button type="info" link size="small" @click="handleViewResources(row)">
+                    <el-icon><List /></el-icon>
+                  </el-button>
+                </el-tooltip>
+                <el-tooltip content="编辑" placement="top">
+                  <el-button type="primary" link size="small" @click="handleEditEnv(row)">
+                    <el-icon><Edit /></el-icon>
+                  </el-button>
+                </el-tooltip>
+                <el-tooltip content="删除" placement="top">
+                  <el-button type="danger" link size="small" @click="handleDeleteEnv(row)">
+                    <el-icon><Delete /></el-icon>
+                  </el-button>
+                </el-tooltip>
               </template>
             </el-table-column>
           </el-table>
@@ -85,10 +97,18 @@
                 </el-tag>
               </template>
             </el-table-column>
-            <el-table-column label="操作" width="150" fixed="right">
+            <el-table-column label="操作" width="100" fixed="right">
               <template #default="{ row }">
-                <el-button type="primary" link size="small" @click="handleEditResource(row)">编辑</el-button>
-                <el-button type="danger" link size="small" @click="handleDeleteResource(row)">删除</el-button>
+                <el-tooltip content="编辑" placement="top">
+                  <el-button type="primary" link size="small" @click="handleEditResource(row)">
+                    <el-icon><Edit /></el-icon>
+                  </el-button>
+                </el-tooltip>
+                <el-tooltip content="删除" placement="top">
+                  <el-button type="danger" link size="small" @click="handleDeleteResource(row)">
+                    <el-icon><Delete /></el-icon>
+                  </el-button>
+                </el-tooltip>
               </template>
             </el-table-column>
           </el-table>
@@ -196,7 +216,7 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus } from '@element-plus/icons-vue'
+import { Plus, List, Edit, Delete } from '@element-plus/icons-vue'
 import { environmentApi, resourceApi } from '@/api/environment'
 
 const activeTab = ref('list')

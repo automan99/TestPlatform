@@ -1,9 +1,9 @@
 """
 用户管理API
 """
-from flask import request
+from flask import request, g
 from flask_restx import Namespace, Resource, fields
-from app.models import User, Tenant
+from app.models import User, Tenant, TenantUser
 from app.utils.errors import success_response, error_response
 from datetime import datetime
 from app import db
@@ -38,14 +38,30 @@ class UserListAPI(Resource):
     def get(self):
         """获取用户列表"""
         try:
+            # 获取当前租户ID
+            tenant_id = request.headers.get('X-Tenant-ID')
+            if not tenant_id:
+                return error_response(message='未指定租户', code=400)
+
+            try:
+                tenant_id = int(tenant_id)
+            except ValueError:
+                return error_response(message='租户ID格式错误', code=400)
+
             # 分页参数
             page = request.args.get('page', 1, type=int)
             per_page = request.args.get('per_page', 20, type=int)
             keyword = request.args.get('keyword', '')
             status = request.args.get('status', '')
 
-            # 构建查询
-            query = User.query.filter_by(is_deleted=False)
+            # 构建查询 - 通过 TenantUser 关联表获取当前租户的用户
+            query = User.query.join(
+                TenantUser, User.id == TenantUser.user_id
+            ).filter(
+                TenantUser.tenant_id == tenant_id,
+                TenantUser.is_deleted == False,
+                User.is_deleted == False
+            )
 
             if keyword:
                 query = query.filter(
@@ -57,7 +73,7 @@ class UserListAPI(Resource):
                 )
 
             if status:
-                query = query.filter_by(status=status)
+                query = query.filter(User.status == status)
 
             # 分页
             pagination = query.order_by(User.id.desc()).paginate(
@@ -79,6 +95,16 @@ class UserListAPI(Resource):
     def post(self):
         """创建用户"""
         try:
+            # 获取当前租户ID
+            tenant_id = request.headers.get('X-Tenant-ID')
+            if not tenant_id:
+                return error_response(message='未指定租户', code=400)
+
+            try:
+                tenant_id = int(tenant_id)
+            except ValueError:
+                return error_response(message='租户ID格式错误', code=400)
+
             data = request.get_json()
 
             # 检查用户名是否已存在
@@ -102,6 +128,15 @@ class UserListAPI(Resource):
                 user.set_password('123456')  # 默认密码
 
             db.session.add(user)
+            db.session.flush()  # 获取用户ID
+
+            # 添加到当前租户
+            tenant_user = TenantUser(
+                tenant_id=tenant_id,
+                user_id=user.id,
+                role=data.get('role', 'member')
+            )
+            db.session.add(tenant_user)
             db.session.commit()
 
             return success_response(data=user.to_dict(), message='创建成功')

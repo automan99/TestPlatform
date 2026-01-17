@@ -4,7 +4,7 @@
 from flask import request, current_app
 from flask_restx import Namespace, Resource, fields
 from app import db
-from app.models import Defect, DefectWorkflow, DefectComment
+from app.models import Defect, DefectWorkflow, DefectComment, DefectModule
 from app.utils import success_response, error_response
 import json
 from datetime import datetime, date
@@ -13,6 +13,7 @@ from datetime import datetime, date
 defect_workflow_ns = Namespace('DefectWorkflows', description='缺陷工作流状态管理')
 defect_ns = Namespace('Defects', description='缺陷管理')
 defect_comment_ns = Namespace('DefectComments', description='缺陷评论管理')
+defect_module_ns = Namespace('DefectModules', description='缺陷模块管理')
 
 # Swagger模型定义
 defect_workflow_model = defect_workflow_ns.model('DefectWorkflow', {
@@ -461,3 +462,113 @@ class DefectCommentAPI(Resource):
         except Exception as e:
             db.session.rollback()
             return error_response(message=f'删除缺陷评论失败: {str(e)}', code=500)
+
+
+# ============== 缺陷模块API ==============
+
+@defect_module_ns.route('')
+class DefectModuleListAPI(Resource):
+    """缺陷模块列表API"""
+
+    def get(self):
+        """获取缺陷模块列表"""
+        try:
+            project_id = request.args.get('project_id', type=int)
+
+            query = DefectModule.query
+            if project_id:
+                query = query.filter_by(project_id=project_id)
+
+            modules = query.order_by(DefectModule.sort_order).all()
+
+            # 构建树形结构
+            def build_tree(parent_id=None):
+                items = []
+                for module in modules:
+                    if module.parent_id == parent_id:
+                        module_dict = module.to_dict()
+                        children = build_tree(module.id)
+                        if children:
+                            module_dict['children'] = children
+                        items.append(module_dict)
+                return items
+
+            tree = build_tree()
+            return success_response(data=tree)
+        except Exception as e:
+            current_app.logger.error(f'获取缺陷模块失败: {str(e)}')
+            return error_response(message=f'获取缺陷模块失败: {str(e)}', code=500)
+
+    def post(self):
+        """创建缺陷模块"""
+        try:
+            data = request.get_json()
+
+            module = DefectModule(
+                name=data.get('name'),
+                project_id=data.get('project_id'),
+                parent_id=data.get('parent_id'),
+                description=data.get('description'),
+                sort_order=data.get('sort_order', 0)
+            )
+
+            db.session.add(module)
+            db.session.commit()
+
+            return success_response(data=module.to_dict(), message='创建成功', code=201)
+        except Exception as e:
+            db.session.rollback()
+            current_app.logger.error(f'创建缺陷模块失败: {str(e)}')
+            return error_response(message=f'创建缺陷模块失败: {str(e)}', code=500)
+
+
+@defect_module_ns.route('/<int:module_id>')
+class DefectModuleAPI(Resource):
+    """缺陷模块详情API"""
+
+    def get(self, module_id):
+        """获取缺陷模块详情"""
+        try:
+            module = DefectModule.query.get_or_404(module_id)
+            return success_response(data=module.to_dict())
+        except Exception as e:
+            return error_response(message=f'获取缺陷模块失败: {str(e)}', code=500)
+
+    def put(self, module_id):
+        """更新缺陷模块"""
+        try:
+            module = DefectModule.query.get_or_404(module_id)
+            data = request.get_json()
+
+            module.name = data.get('name', module.name)
+            module.parent_id = data.get('parent_id', module.parent_id)
+            module.description = data.get('description', module.description)
+            module.sort_order = data.get('sort_order', module.sort_order)
+
+            db.session.commit()
+            return success_response(data=module.to_dict(), message='更新成功')
+        except Exception as e:
+            db.session.rollback()
+            current_app.logger.error(f'更新缺陷模块失败: {str(e)}')
+            return error_response(message=f'更新缺陷模块失败: {str(e)}', code=500)
+
+    def delete(self, module_id):
+        """删除缺陷模块"""
+        try:
+            module = DefectModule.query.get_or_404(module_id)
+
+            # 检查是否有子模块
+            if DefectModule.query.filter_by(parent_id=module_id).first():
+                return error_response(message='该模块下有子模块，无法删除', code=400)
+
+            # 检查是否有缺陷使用此模块
+            if Defect.query.filter_by(module_id=module_id).first():
+                return error_response(message='该模块正在被使用，无法删除', code=400)
+
+            db.session.delete(module)
+            db.session.commit()
+            return success_response(message='删除成功')
+        except Exception as e:
+            db.session.rollback()
+            current_app.logger.error(f'删除缺陷模块失败: {str(e)}')
+            return error_response(message=f'删除缺陷模块失败: {str(e)}', code=500)

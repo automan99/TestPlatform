@@ -3,6 +3,7 @@
 """
 from datetime import datetime
 from app import db
+import json
 
 
 class DefectWorkflow(db.Model):
@@ -56,6 +57,7 @@ class Defect(db.Model):
     test_case_id = db.Column(db.Integer, db.ForeignKey('test_cases.id'), nullable=True)
     test_execution_id = db.Column(db.Integer, db.ForeignKey('test_executions.id'), nullable=True)
     test_plan_id = db.Column(db.Integer, db.ForeignKey('test_plans.id'), nullable=True)
+    module_id = db.Column(db.Integer, db.ForeignKey('defect_modules.id'), nullable=True, index=True)
 
     # 缺陷属性
     severity = db.Column(db.String(20), default='medium')  # 严重程度: critical, high, medium, low, trivial
@@ -125,6 +127,7 @@ class Defect(db.Model):
             'test_case_id': self.test_case_id,
             'test_execution_id': self.test_execution_id,
             'test_plan_id': self.test_plan_id,
+            'module_id': self.module_id,
             'severity': self.severity,
             'priority': self.priority,
             'status_id': self.status_id,
@@ -155,6 +158,38 @@ class Defect(db.Model):
             'screenshots': self.screenshots,
             'view_count': self.view_count,
             'comment_count': self.comment_count,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None
+        }
+
+
+class DefectModule(db.Model):
+    """缺陷模块模型"""
+    __tablename__ = 'defect_modules'
+
+    id = db.Column(db.Integer, primary_key=True)
+    project_id = db.Column(db.Integer, nullable=True, index=True)
+    name = db.Column(db.String(100), nullable=False)
+    parent_id = db.Column(db.Integer, db.ForeignKey('defect_modules.id'), nullable=True)
+    description = db.Column(db.Text, nullable=True)
+    sort_order = db.Column(db.Integer, default=0)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # 关系
+    children = db.relationship('DefectModule',
+                              backref=db.backref('parent', remote_side=[id]),
+                              lazy='dynamic')
+
+    def to_dict(self):
+        """转换为字典"""
+        return {
+            'id': self.id,
+            'project_id': self.project_id,
+            'name': self.name,
+            'parent_id': self.parent_id,
+            'description': self.description,
+            'sort_order': self.sort_order,
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None
         }

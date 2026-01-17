@@ -1,45 +1,70 @@
 <template>
   <div class="test-case-page">
-    <el-card>
-      <template #header>
-        <div class="page-header">
-          <span>测试用例管理</span>
-          <div class="header-actions">
-            <el-button type="primary" :icon="Plus" @click="handleCreateSuite">新建文件夹</el-button>
-            <el-button type="primary" :icon="Plus" @click="handleCreateCase">新建用例</el-button>
-          </div>
-        </div>
-      </template>
-
-      <el-container>
-        <el-aside width="250px" class="suite-tree">
-          <el-input
-            v-model="filterText"
-            placeholder="搜索文件夹"
-            :prefix-icon="Search"
-            clearable
-            style="margin-bottom: 12px"
-          />
-          <el-tree
-            ref="treeRef"
-            :data="suiteTree"
-            :props="{ children: 'children', label: 'name' }"
-            :filter-node-method="filterNode"
-            node-key="id"
-            highlight-current
-            @node-click="handleNodeClick"
-          >
-            <template #default="{ node, data }">
-              <span class="tree-node">
-                <el-icon><Folder /></el-icon>
-                <span>{{ node.label }}</span>
-                <span class="node-count">({{ data.case_count || 0 }})</span>
-              </span>
+    <div class="page-layout" ref="layoutRef">
+      <!-- 左侧目录树 -->
+      <div class="suite-sidebar" :style="{ width: sidebarWidth + 'px' }">
+        <div class="suite-header">
+          <span>目录</span>
+          <el-dropdown trigger="click" @command="handleSuiteCommand">
+            <el-button type="primary" link size="small">
+              <el-icon><Plus /></el-icon>
+            </el-button>
+            <template #dropdown>
+              <el-dropdown-menu>
+                <el-dropdown-item command="add">新建目录</el-dropdown-item>
+              </el-dropdown-menu>
             </template>
-          </el-tree>
-        </el-aside>
+          </el-dropdown>
+        </div>
+        <el-tree
+          ref="treeRef"
+          :data="suiteTree"
+          :props="treeProps"
+          :highlight-current="true"
+          node-key="id"
+          default-expand-all
+          @node-click="handleNodeClick"
+        >
+          <template #default="{ node, data }">
+            <div class="tree-node">
+              <div class="node-content">
+                <el-icon class="folder-icon"><Folder /></el-icon>
+                <span class="node-label">{{ node.label }}</span>
+                <span class="node-count">({{ data.case_count || 0 }})</span>
+              </div>
+              <el-dropdown trigger="click" @command="(cmd) => handleSuiteAction(cmd, data)">
+                <el-icon class="node-more" @click.stop><MoreFilled /></el-icon>
+                <template #dropdown>
+                  <el-dropdown-menu>
+                    <el-dropdown-item command="addSub">添加子目录</el-dropdown-item>
+                    <el-dropdown-item command="edit">编辑</el-dropdown-item>
+                    <el-dropdown-item command="delete">删除</el-dropdown-item>
+                  </el-dropdown-menu>
+                </template>
+              </el-dropdown>
+            </div>
+          </template>
+        </el-tree>
+      </div>
 
-        <el-main class="case-list">
+      <!-- 拖拽分隔条 -->
+      <div
+        class="resize-handle"
+        @mousedown="handleMouseDown"
+      ></div>
+
+      <!-- 右侧内容区 -->
+      <div class="content-area">
+        <el-card>
+          <template #header>
+            <div class="page-header">
+              <span>{{ currentSuiteName }}</span>
+              <div class="header-actions">
+                <el-button type="primary" :icon="Plus" @click="handleCreateCase">新建用例</el-button>
+              </div>
+            </div>
+          </template>
+
           <div class="toolbar">
             <el-input
               v-model="searchForm.keyword"
@@ -49,6 +74,7 @@
               @change="loadCases"
             />
             <el-select v-model="searchForm.priority" placeholder="优先级" clearable @change="loadCases">
+              <el-option label="紧急" value="critical" />
               <el-option label="高" value="high" />
               <el-option label="中" value="medium" />
               <el-option label="低" value="low" />
@@ -108,13 +134,33 @@
                 <el-tag :type="getStatusType(row.status)">{{ row.status }}</el-tag>
               </template>
             </el-table-column>
-            <el-table-column label="操作" width="320" fixed="right">
+            <el-table-column label="操作" width="200" fixed="right">
               <template #default="{ row }">
-                <el-button type="info" link size="small" @click="handleView(row)">查看</el-button>
-                <el-button type="success" link size="small" @click="handleExecute(row)">执行</el-button>
-                <el-button type="warning" link size="small" @click="handleAIExecute(row)">AI执行</el-button>
-                <el-button type="primary" link size="small" @click="handleEdit(row)">编辑</el-button>
-                <el-button type="danger" link size="small" @click="handleDelete(row)">删除</el-button>
+                <el-tooltip content="查看" placement="top">
+                  <el-button type="info" link size="small" @click="handleView(row)">
+                    <el-icon><View /></el-icon>
+                  </el-button>
+                </el-tooltip>
+                <el-tooltip content="执行" placement="top">
+                  <el-button type="success" link size="small" @click="handleExecute(row)">
+                    <el-icon><VideoPlay /></el-icon>
+                  </el-button>
+                </el-tooltip>
+                <el-tooltip content="AI执行" placement="top">
+                  <el-button type="warning" link size="small" @click="handleAIExecute(row)">
+                    <el-icon><MagicStick /></el-icon>
+                  </el-button>
+                </el-tooltip>
+                <el-tooltip content="编辑" placement="top">
+                  <el-button type="primary" link size="small" @click="handleEdit(row)">
+                    <el-icon><Edit /></el-icon>
+                  </el-button>
+                </el-tooltip>
+                <el-tooltip content="删除" placement="top">
+                  <el-button type="danger" link size="small" @click="handleDelete(row)">
+                    <el-icon><Delete /></el-icon>
+                  </el-button>
+                </el-tooltip>
               </template>
             </el-table-column>
           </el-table>
@@ -129,9 +175,9 @@
             @size-change="loadCases"
             style="margin-top: 20px; justify-content: flex-end"
           />
-        </el-main>
-      </el-container>
-    </el-card>
+        </el-card>
+      </div>
+    </div>
 
     <!-- 用例表单对话框 -->
     <el-dialog
@@ -151,12 +197,14 @@
             </el-form-item>
           </el-col>
           <el-col :span="8">
-            <el-form-item label="所属文件夹" prop="suite_id">
-              <el-cascader
+            <el-form-item label="所属目录" prop="suite_id">
+              <el-tree-select
                 v-model="form.suite_id"
-                :options="suiteOptions"
-                :props="{ value: 'id', label: 'name', checkStrictly: true }"
+                :data="suiteOptions"
+                :props="{ value: 'id', label: 'name', children: 'children' }"
+                check-strictly
                 clearable
+                placeholder="请选择目录"
                 style="width: 100%"
               />
             </el-form-item>
@@ -274,6 +322,30 @@
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
         <el-button type="primary" @click="handleSubmit">确定</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 目录表单对话框 -->
+    <el-dialog v-model="suiteDialogVisible" :title="suiteDialogTitle" width="500px">
+      <el-form :model="suiteForm" :rules="suiteRules" ref="suiteFormRef" label-width="100px">
+        <el-form-item label="目录名称" prop="name">
+          <el-input v-model="suiteForm.name" placeholder="请输入目录名称" />
+        </el-form-item>
+        <el-form-item label="父目录" prop="parent_id">
+          <el-tree-select
+            v-model="suiteForm.parent_id"
+            :data="suiteOptions"
+            :props="{ value: 'id', label: 'name', children: 'children' }"
+            check-strictly
+            clearable
+            placeholder="请选择父目录"
+            style="width: 100%"
+          />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="suiteDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="handleSuiteSubmit">确定</el-button>
       </template>
     </el-dialog>
 
@@ -434,6 +506,26 @@
         <el-button type="primary" :loading="executing" @click="handleSubmitExecution">提交执行结果</el-button>
       </template>
     </el-dialog>
+
+    <!-- 选择执行环境对话框 -->
+    <el-dialog v-model="envDialogVisible" title="选择执行环境" width="500px" destroy-on-close>
+      <el-form label-width="100px">
+        <el-form-item label="执行环境" required>
+          <el-select v-model="selectedEnvironmentId" placeholder="请选择执行环境" style="width: 100%">
+            <el-option
+              v-for="env in environmentList"
+              :key="env.id"
+              :label="`${env.name} (${env.url || env.base_url})`"
+              :value="env.id"
+            />
+          </el-select>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="envDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="handleConfirmAIExecute">确定</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -442,11 +534,12 @@ import { ref, reactive, onMounted, watch, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
-  Plus, Delete, Search, Folder
+  Plus, Delete, Folder, View, VideoPlay, MagicStick, Edit, MoreFilled
 } from '@element-plus/icons-vue'
 import { useTestCaseStore } from '@/store/test-case'
 import { useProjectStore } from '@/store/project'
 import { defectApi } from '@/api/defect'
+import { environmentApi } from '@/api/environment'
 
 const router = useRouter()
 
@@ -454,18 +547,104 @@ const testCaseStore = useTestCaseStore()
 const projectStore = useProjectStore()
 const treeRef = ref()
 const formRef = ref()
+const suiteFormRef = ref()
+const layoutRef = ref()
+
+// 侧边栏宽度相关
+const sidebarWidth = ref(250)
+const minWidth = 180
+const maxWidth = 500
+const isResizing = ref(false)
+
+// 从 localStorage 恢复宽度
+const savedWidth = localStorage.getItem('test-case-sidebar-width')
+if (savedWidth) {
+  sidebarWidth.value = parseInt(savedWidth)
+}
+
+// 监听宽度变化并保存
+watch(sidebarWidth, (newWidth) => {
+  localStorage.setItem('test-case-sidebar-width', newWidth.toString())
+})
+
+// 鼠标按下开始拖拽
+function handleMouseDown(e) {
+  isResizing.value = true
+  document.addEventListener('mousemove', handleMouseMove)
+  document.addEventListener('mouseup', handleMouseUp)
+  document.body.style.cursor = 'col-resize'
+  document.body.style.userSelect = 'none'
+}
+
+// 鼠标移动
+function handleMouseMove(e) {
+  if (!isResizing.value || !layoutRef.value) return
+
+  const rect = layoutRef.value.getBoundingClientRect()
+  const newWidth = e.clientX - rect.left
+
+  // 限制宽度范围
+  if (newWidth >= minWidth && newWidth <= maxWidth) {
+    sidebarWidth.value = newWidth
+  }
+}
+
+// 鼠标释放
+function handleMouseUp() {
+  isResizing.value = false
+  document.removeEventListener('mousemove', handleMouseMove)
+  document.removeEventListener('mouseup', handleMouseUp)
+  document.body.style.cursor = ''
+  document.body.style.userSelect = ''
+}
 
 // 当前项目ID
 const currentProjectId = computed(() => projectStore.currentProject?.id)
 
-const filterText = ref('')
 const suiteTree = ref([])
+const suiteOptions = ref([])
 const caseList = ref([])
 const selectedCases = ref([])
+const currentSuiteId = ref(null)
 
 const dialogVisible = ref(false)
 const dialogTitle = ref('')
 const isEdit = ref(false)
+
+// 目录相关
+const suiteDialogVisible = ref(false)
+const suiteDialogTitle = ref('')
+const isSuiteEdit = ref(false)
+const suiteForm = reactive({
+  id: null,
+  name: '',
+  parent_id: null
+})
+
+const suiteRules = {
+  name: [{ required: true, message: '请输入目录名称', trigger: 'blur' }]
+}
+
+const treeProps = {
+  children: 'children',
+  label: 'name',
+  value: 'id'
+}
+
+const currentSuiteName = computed(() => {
+  if (currentSuiteId.value === null) return '全部测试用例'
+  const findName = (tree, id) => {
+    for (const item of tree) {
+      if (item.id === id) return item.name
+      if (item.children) {
+        const found = findName(item.children, id)
+        if (found) return found
+      }
+    }
+    return ''
+  }
+  return findName(suiteTree.value, currentSuiteId.value) || '当前目录'
+})
 
 // 查看和执行相关
 const viewDialogVisible = ref(false)
@@ -484,6 +663,12 @@ const executeForm = reactive({
 
 // 缺陷列表
 const defectList = ref([])
+
+// 环境选择相关
+const envDialogVisible = ref(false)
+const environmentList = ref([])
+const selectedEnvironmentId = ref(null)
+const pendingAIExecuteCase = ref(null)
 
 const searchForm = reactive({
   keyword: '',
@@ -518,17 +703,6 @@ const rules = {
   name: [{ required: true, message: '请输入用例名称', trigger: 'blur' }]
 }
 
-const suiteOptions = ref([])
-
-watch(filterText, (val) => {
-  treeRef.value?.filter(val)
-})
-
-function filterNode(value, data) {
-  if (!value) return true
-  return data.name.includes(value)
-}
-
 function getPriorityType(priority) {
   const map = { critical: 'danger', high: 'warning', medium: 'primary', low: 'info' }
   return map[priority] || 'info'
@@ -560,15 +734,93 @@ function buildOptions(tree) {
 }
 
 function handleNodeClick(data) {
+  currentSuiteId.value = data.id
   testCaseStore.setCurrentSuite(data)
+  pagination.page = 1
   loadCases()
+}
+
+// 目录操作命令
+function handleSuiteCommand(command) {
+  if (command === 'add') {
+    handleAddSuite()
+  }
+}
+
+function handleSuiteAction(command, data) {
+  if (command === 'addSub') {
+    handleAddSuite(data.id)
+  } else if (command === 'edit') {
+    handleEditSuite(data)
+  } else if (command === 'delete') {
+    handleDeleteSuite(data)
+  }
+}
+
+// 添加目录
+function handleAddSuite(parentId = null) {
+  isSuiteEdit.value = false
+  suiteDialogTitle.value = parentId ? '新建子目录' : '新建目录'
+  Object.assign(suiteForm, {
+    id: null,
+    name: '',
+    parent_id: parentId
+  })
+  suiteDialogVisible.value = true
+}
+
+// 编辑目录
+function handleEditSuite(data) {
+  isSuiteEdit.value = true
+  suiteDialogTitle.value = '编辑目录'
+  Object.assign(suiteForm, {
+    id: data.id,
+    name: data.name,
+    parent_id: data.parent_id
+  })
+  suiteDialogVisible.value = true
+}
+
+// 删除目录
+function handleDeleteSuite(data) {
+  ElMessageBox.confirm('确定要删除这个目录吗？删除后目录下的测试用例将变为无目录状态。', '提示', {
+    type: 'warning'
+  }).then(() => {
+    testCaseStore.deleteSuite(data.id).then(() => {
+      ElMessage.success('删除成功')
+      loadSuites()
+      if (currentSuiteId.value === data.id) {
+        currentSuiteId.value = null
+        testCaseStore.setCurrentSuite(null)
+      }
+    })
+  })
+}
+
+// 提交目录表单
+function handleSuiteSubmit() {
+  suiteFormRef.value.validate((valid) => {
+    if (valid) {
+      const data = {
+        ...suiteForm,
+        project_id: currentProjectId.value
+      }
+      const api = isSuiteEdit.value ? testCaseStore.updateSuite : testCaseStore.createSuite
+      const params = isSuiteEdit.value ? suiteForm.id : data
+      api(params, isSuiteEdit.value ? data : null).then(() => {
+        ElMessage.success(isSuiteEdit.value ? '更新成功' : '创建成功')
+        suiteDialogVisible.value = false
+        loadSuites()
+      })
+    }
+  })
 }
 
 async function loadCases() {
   const res = await testCaseStore.fetchCases({
     page: pagination.page,
     per_page: pagination.pageSize,
-    suite_id: testCaseStore.currentSuite?.id,
+    suite_id: currentSuiteId.value,
     project_id: currentProjectId.value,
     ...searchForm
   })
@@ -580,22 +832,6 @@ function handleSelectionChange(selection) {
   selectedCases.value = selection.map(item => item.id)
 }
 
-function handleCreateSuite() {
-  ElMessageBox.prompt('请输入文件夹名称', '新建文件夹', {
-    confirmButtonText: '确定',
-    cancelButtonText: '取消'
-  }).then(({ value }) => {
-    testCaseStore.createSuite({
-      name: value,
-      parent_id: testCaseStore.currentSuite?.id,
-      project_id: currentProjectId.value
-    }).then(() => {
-      ElMessage.success('创建成功')
-      loadSuites()
-    })
-  })
-}
-
 function handleCreateCase() {
   isEdit.value = false
   dialogTitle.value = '新建测试用例'
@@ -603,7 +839,7 @@ function handleCreateCase() {
     id: null,
     name: '',
     case_no: '',
-    suite_id: testCaseStore.currentSuite?.id,
+    suite_id: currentSuiteId.value,
     preconditions: '',
     postconditions: '',
     stepList: [{ step: '', expected: '' }],
@@ -789,12 +1025,40 @@ function handleExecute(row) {
 }
 
 // AI执行用例
+// AI执行单个用例
 function handleAIExecute(row) {
+  pendingAIExecuteCase.value = row
+  selectedEnvironmentId.value = null
+  envDialogVisible.value = true
+  loadEnvironments()
+}
+
+// 加载环境列表
+async function loadEnvironments() {
+  try {
+    const res = await environmentApi.getList({
+      per_page: 100
+    })
+    environmentList.value = res.data?.items || []
+  } catch (error) {
+    console.error('加载环境列表失败:', error)
+  }
+}
+
+// 确认AI执行
+function handleConfirmAIExecute() {
+  if (!selectedEnvironmentId.value) {
+    ElMessage.warning('请选择执行环境')
+    return
+  }
+
+  envDialogVisible.value = false
+
   router.push({
     path: '/test-cases/ai-execution',
     query: {
-      caseIds: row.id,
-      environmentId: null
+      caseIds: pendingAIExecuteCase.value.id,
+      environmentId: selectedEnvironmentId.value
     }
   })
 }
@@ -833,14 +1097,27 @@ async function handleSubmitExecution() {
 
   executing.value = true
   try {
-    // 这里需要调用执行API，暂时使用模拟数据
-    // TODO: 集成到测试计划执行API
+    // 调用执行API创建执行记录
+    const { testExecutionApi } = await import('@/api/test-plan')
+
+    await testExecutionApi.create({
+      test_case_id: executeCase.value.id,
+      status: executeForm.status,
+      actual_result: executeForm.actual_result,
+      notes: executeForm.notes,
+      duration: executeForm.duration,
+      defect_ids: executeForm.defect_ids,
+      executed_by: 'current_user' // TODO: 从登录用户信息获取
+    })
+
     ElMessage.success('执行结果提交成功')
     executeDialogVisible.value = false
 
-    // 可以在这里刷新数据或跳转到执行记录
+    // 刷新用例列表（可能显示最新执行状态）
+    loadCases()
   } catch (error) {
-    ElMessage.error('提交失败')
+    console.error('提交执行结果失败:', error)
+    ElMessage.error('提交失败: ' + (error.response?.data?.message || error.message))
   } finally {
     executing.value = false
   }
@@ -856,9 +1133,8 @@ onMounted(() => {
 // 监听项目变化，重新加载数据
 watch(currentProjectId, (newVal, oldVal) => {
   if (newVal && newVal !== oldVal) {
-    // 清空当前选择
+    currentSuiteId.value = null
     testCaseStore.setCurrentSuite(null)
-    // 重新加载数据
     loadSuites()
     loadCases()
   }
@@ -866,6 +1142,123 @@ watch(currentProjectId, (newVal, oldVal) => {
 </script>
 
 <style scoped>
+.test-case-page {
+  height: 100%;
+}
+
+.page-layout {
+  display: flex;
+  height: calc(100vh - 120px);
+  overflow: hidden;
+}
+
+.suite-sidebar {
+  flex-shrink: 0;
+  background: #fff;
+  border-radius: 4px;
+  border: 1px solid #e4e7ed;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.resize-handle {
+  width: 6px;
+  flex-shrink: 0;
+  background: #f0f2f5;
+  cursor: col-resize;
+  transition: background-color 0.2s;
+  position: relative;
+  z-index: 10;
+}
+
+.resize-handle:hover {
+  background: #dcdfe6;
+}
+
+.resize-handle:active {
+  background: #c0c4cc;
+}
+
+.suite-header {
+  padding: 12px 16px;
+  border-bottom: 1px solid #e4e7ed;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 500;
+}
+
+.suite-sidebar :deep(.el-tree) {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+}
+
+.tree-node {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-right: 8px;
+  width: 100%;
+}
+
+.node-content {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow: hidden;
+}
+
+.folder-icon {
+  color: #409eff;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.node-label {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.node-count {
+  color: #909399;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.node-more {
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.tree-node:hover .node-more {
+  opacity: 1;
+}
+
+.content-area {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.content-area :deep(.el-card) {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.content-area :deep(.el-card__body) {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
 .page-header {
   display: flex;
   justify-content: space-between;
@@ -877,33 +1270,10 @@ watch(currentProjectId, (newVal, oldVal) => {
   gap: 8px;
 }
 
-.suite-tree {
-  border-right: 1px solid #e4e7ed;
-  padding-right: 16px;
-  overflow: auto;
-}
-
-.case-list {
-  padding: 0;
-}
-
 .toolbar {
   display: flex;
   gap: 12px;
   margin-bottom: 16px;
-}
-
-.tree-node {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  flex: 1;
-}
-
-.node-count {
-  margin-left: auto;
-  color: #909399;
-  font-size: 12px;
 }
 
 .steps-table-wrapper {

@@ -4,7 +4,7 @@
       <template #header>
         <div class="page-header">
           <span>测试报告</span>
-          <el-button type="primary" :icon="'Plus'" @click="handleCreate">生成报告</el-button>
+          <el-button type="primary" :icon="Plus" @click="handleCreate">生成报告</el-button>
         </div>
       </template>
 
@@ -36,11 +36,23 @@
                 <el-progress :percentage="row.pass_rate || 0" :color="getPassRateColor(row.pass_rate)" />
               </template>
             </el-table-column>
-            <el-table-column label="操作" width="180" fixed="right">
+            <el-table-column label="操作" width="140" fixed="right">
               <template #default="{ row }">
-                <el-button type="primary" link size="small" @click="handleView(row)">查看</el-button>
-                <el-button type="success" link size="small" @click="handleExport(row)">导出</el-button>
-                <el-button type="danger" link size="small" @click="handleDelete(row)">删除</el-button>
+                <el-tooltip content="查看" placement="top">
+                  <el-button type="primary" link size="small" @click="handleView(row)">
+                    <el-icon><View /></el-icon>
+                  </el-button>
+                </el-tooltip>
+                <el-tooltip content="导出" placement="top">
+                  <el-button type="success" link size="small" @click="handleExport(row)">
+                    <el-icon><Download /></el-icon>
+                  </el-button>
+                </el-tooltip>
+                <el-tooltip content="删除" placement="top">
+                  <el-button type="danger" link size="small" @click="handleDelete(row)">
+                    <el-icon><Delete /></el-icon>
+                  </el-button>
+                </el-tooltip>
               </template>
             </el-table-column>
           </el-table>
@@ -101,10 +113,18 @@
               </template>
             </el-table-column>
             <el-table-column prop="created_at" label="创建时间" width="180" />
-            <el-table-column label="操作" width="150" fixed="right">
+            <el-table-column label="操作" width="100" fixed="right">
               <template #default="{ row }">
-                <el-button type="primary" link size="small">编辑</el-button>
-                <el-button type="danger" link size="small">删除</el-button>
+                <el-tooltip content="编辑" placement="top">
+                  <el-button type="primary" link size="small" @click="handleEditTemplate(row)">
+                    <el-icon><Edit /></el-icon>
+                  </el-button>
+                </el-tooltip>
+                <el-tooltip content="删除" placement="top">
+                  <el-button type="danger" link size="small" @click="handleDeleteTemplate(row)">
+                    <el-icon><Delete /></el-icon>
+                  </el-button>
+                </el-tooltip>
               </template>
             </el-table-column>
           </el-table>
@@ -180,6 +200,7 @@
 <script setup>
 import { ref, reactive, onMounted, nextTick } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { View, Download, Edit, Delete, Plus } from '@element-plus/icons-vue'
 import * as echarts from 'echarts'
 import { reportApi } from '@/api/report'
 import { testPlanApi } from '@/api/test-plan'

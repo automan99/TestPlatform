@@ -40,11 +40,23 @@
             {{ row.expire_date || '-' }}
           </template>
         </el-table-column>
-        <el-table-column :label="t('common.operation')" width="180" fixed="right">
+        <el-table-column :label="t('common.operation')" width="200" fixed="right">
           <template #default="{ row }">
-            <el-button type="primary" link size="small" @click="handleSwitch(row)">{{ t('tenant.switch') }}</el-button>
-            <el-button type="primary" link size="small" @click="handleEdit(row)">{{ t('common.edit') }}</el-button>
-            <el-button type="danger" link size="small" @click="handleDelete(row)">{{ t('common.delete') }}</el-button>
+            <el-tooltip content="成员管理" placement="top">
+              <el-button type="info" link size="small" @click="handleMembers(row)">
+                <el-icon><User /></el-icon>
+              </el-button>
+            </el-tooltip>
+            <el-tooltip content="编辑" placement="top">
+              <el-button type="primary" link size="small" @click="handleEdit(row)">
+                <el-icon><Edit /></el-icon>
+              </el-button>
+            </el-tooltip>
+            <el-tooltip content="删除" placement="top">
+              <el-button type="danger" link size="small" @click="handleDelete(row)">
+                <el-icon><Delete /></el-icon>
+              </el-button>
+            </el-tooltip>
           </template>
         </el-table-column>
       </el-table>
@@ -116,6 +128,64 @@
         <el-button type="primary" @click="handleSubmit">{{ t('common.confirm') }}</el-button>
       </template>
     </el-dialog>
+
+    <!-- 成员管理对话框 -->
+    <el-dialog v-model="membersDialogVisible" title="成员管理" width="800px" destroy-on-close>
+      <div class="members-header">
+        <el-button type="primary" :icon="Plus" @click="showAddMemberDialog">添加成员</el-button>
+      </div>
+      <el-table :data="memberList" style="width: 100%; margin-top: 16px">
+        <el-table-column prop="username" label="用户名" width="150" />
+        <el-table-column prop="real_name" label="真实姓名" width="150" />
+        <el-table-column prop="email" label="邮箱" />
+        <el-table-column prop="role" label="角色" width="120">
+          <template #default="{ row }">
+            <el-tag v-if="row.role === 'admin'" type="danger">管理员</el-tag>
+            <el-tag v-else type="info">成员</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="100" fixed="right">
+          <template #default="{ row }">
+            <el-tooltip content="移除" placement="top">
+              <el-button type="danger" link size="small" @click="handleRemoveMember(row)">
+                <el-icon><Delete /></el-icon>
+              </el-button>
+            </el-tooltip>
+          </template>
+        </el-table-column>
+      </el-table>
+    </el-dialog>
+
+    <!-- 添加成员对话框 -->
+    <el-dialog v-model="addMemberDialogVisible" title="添加成员" width="500px" destroy-on-close>
+      <el-form :model="memberForm" ref="memberFormRef" label-width="100px">
+        <el-form-item label="用户" prop="user_id" required>
+          <el-select
+            v-model="memberForm.user_id"
+            placeholder="选择用户"
+            filterable
+            style="width: 100%"
+          >
+            <el-option
+              v-for="user in availableUsers"
+              :key="user.id"
+              :label="`${user.real_name || user.username} (${user.username})`"
+              :value="user.id"
+            />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="角色" prop="role">
+          <el-select v-model="memberForm.role" placeholder="选择角色" style="width: 100%">
+            <el-option label="成员" value="member" />
+            <el-option label="管理员" value="admin" />
+          </el-select>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="addMemberDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="handleAddMember">确定</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -123,21 +193,28 @@
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus } from '@element-plus/icons-vue'
+import { Plus, User, Edit, Delete } from '@element-plus/icons-vue'
 import { useI18n } from '@/i18n'
 import { tenantApi } from '@/api/tenant'
+import { userApi } from '@/api/user'
 import { useTenantStore } from '@/store/tenant'
 
 const router = useRouter()
 const { t } = useI18n()
 const tenantStore = useTenantStore()
 const formRef = ref()
+const memberFormRef = ref()
 
 const dialogVisible = ref(false)
 const dialogTitle = ref('')
 const isEdit = ref(false)
+const membersDialogVisible = ref(false)
+const addMemberDialogVisible = ref(false)
+const currentTenantId = ref(null)
 
 const tenantList = ref([])
+const memberList = ref([])
+const availableUsers = ref([])
 
 const searchForm = reactive({
   keyword: '',
@@ -160,6 +237,11 @@ const form = reactive({
   max_storage_gb: 10,
   expireDate: '',
   status: 'active'
+})
+
+const memberForm = reactive({
+  user_id: null,
+  role: 'member'
 })
 
 const rules = {
@@ -253,16 +335,73 @@ function handleSubmit() {
   })
 }
 
-async function handleSwitch(row) {
+// 成员管理
+async function handleMembers(row) {
+  currentTenantId.value = row.id
+  await loadMembers(row.id)
+  membersDialogVisible.value = true
+}
+
+async function loadMembers(tenantId) {
   try {
-    await tenantApi.switch(row.id)
-    // 更新租户存储
-    await tenantStore.setCurrentTenant(row.id)
-    ElMessage.success(t('tenant.switchSuccess'))
-    router.push('/dashboard')
+    const res = await tenantApi.getMembers(tenantId)
+    memberList.value = res.data || []
   } catch (error) {
-    ElMessage.error(error.response?.data?.message || t('tenant.switchFailed'))
+    ElMessage.error('获取成员列表失败')
   }
+}
+
+async function showAddMemberDialog() {
+  // 加载可用的用户列表（不在当前租户中的用户）
+  try {
+    const res = await userApi.getList({ per_page: 1000 })
+    const allUsers = res.data?.items || []
+
+    // 获取当前租户成员的用户ID
+    const memberUserIds = memberList.value.map(m => m.user_id)
+
+    // 过滤出不在当前租户中的用户
+    availableUsers.value = allUsers.filter(u => !memberUserIds.includes(u.id))
+  } catch (error) {
+    ElMessage.error('获取用户列表失败')
+  }
+
+  memberForm.user_id = null
+  memberForm.role = 'member'
+  addMemberDialogVisible.value = true
+}
+
+async function handleAddMember() {
+  if (!memberForm.user_id) {
+    ElMessage.warning('请选择用户')
+    return
+  }
+
+  try {
+    await tenantApi.addMember(currentTenantId.value, {
+      user_id: memberForm.user_id,
+      role: memberForm.role
+    })
+    ElMessage.success('添加成员成功')
+    addMemberDialogVisible.value = false
+    await loadMembers(currentTenantId.value)
+  } catch (error) {
+    ElMessage.error('添加成员失败: ' + (error.response?.data?.message || error.message))
+  }
+}
+
+async function handleRemoveMember(row) {
+  ElMessageBox.confirm('确定要将该成员从租户中移除吗？', '提示', {
+    type: 'warning'
+  }).then(async () => {
+    try {
+      await tenantApi.removeMember(currentTenantId.value, row.user_id)
+      ElMessage.success('移除成员成功')
+      await loadMembers(currentTenantId.value)
+    } catch (error) {
+      ElMessage.error('移除成员失败')
+    }
+  })
 }
 
 onMounted(() => {

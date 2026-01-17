@@ -14,24 +14,26 @@ class TestPlan(db.Model):
     plan_no = db.Column(db.String(50), unique=True)  # 计划编号
     description = db.Column(db.Text)
     project_id = db.Column(db.Integer, nullable=True, index=True)
+    folder_id = db.Column(db.Integer, db.ForeignKey('test_plan_folders.id'), nullable=True)  # 所属目录
     start_date = db.Column(db.Date)
     end_date = db.Column(db.Date)
     status = db.Column(db.String(20), default='draft')  # draft, active, completed, cancelled, archived
     priority = db.Column(db.String(20), default='medium')  # low, medium, high
     build_version = db.Column(db.String(100))  # 测试版本
     target_environment_id = db.Column(db.Integer, db.ForeignKey('test_environments.id'), nullable=True)
-    automation_enabled = db.Column(db.Boolean, default=False)  # 是否启用自动化
-    agent_config = db.Column(db.Text)  # 自动化Agent配置 (JSON格式)
+    assigned_to = db.Column(db.String(100))  # 指派给
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     created_by = db.Column(db.String(100))
     updated_by = db.Column(db.String(100))
+    is_deleted = db.Column(db.Boolean, default=False)
 
     # 关系
     test_plan_cases = db.relationship('TestPlanCase', backref='test_plan', lazy='dynamic',
                                       cascade='all, delete-orphan')
     executions = db.relationship('TestExecution', backref='test_plan', lazy='dynamic')
     target_environment = db.relationship('TestEnvironment', backref='test_plans')
+    folder = db.relationship('TestPlanFolder', backref='test_plans')
 
     def get_progress(self):
         """获取执行进度"""
@@ -61,14 +63,14 @@ class TestPlan(db.Model):
             'plan_no': self.plan_no,
             'description': self.description,
             'project_id': self.project_id,
+            'folder_id': self.folder_id,
             'start_date': self.start_date.isoformat() if self.start_date else None,
             'end_date': self.end_date.isoformat() if self.end_date else None,
             'status': self.status,
             'priority': self.priority,
             'build_version': self.build_version,
             'target_environment_id': self.target_environment_id,
-            'automation_enabled': self.automation_enabled,
-            'agent_config': self.agent_config,
+            'assigned_to': self.assigned_to,
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None,
             'created_by': self.created_by,
@@ -145,4 +147,42 @@ class TestExecution(db.Model):
             'environment_id': self.environment_id,
             'screenshots': self.screenshots,
             'defect_ids': self.defect_ids
+        }
+
+
+class TestPlanFolder(db.Model):
+    """测试计划目录模型"""
+    __tablename__ = 'test_plan_folders'
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(200), nullable=False)
+    project_id = db.Column(db.Integer, nullable=False, index=True)
+    parent_id = db.Column(db.Integer, db.ForeignKey('test_plan_folders.id'), nullable=True)
+    description = db.Column(db.Text)
+    sort_order = db.Column(db.Integer, default=0)
+    is_deleted = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_by = db.Column(db.String(100))
+
+    # 关系
+    children = db.relationship('TestPlanFolder', backref=db.backref('parent', remote_side=[id]),
+                               lazy='dynamic', cascade='all, delete-orphan')
+
+    def get_plan_count(self):
+        """获取目录下的计划数量"""
+        return TestPlan.query.filter_by(folder_id=self.id, is_deleted=False).count()
+
+    def to_dict(self):
+        """转换为字典"""
+        return {
+            'id': self.id,
+            'name': self.name,
+            'project_id': self.project_id,
+            'parent_id': self.parent_id,
+            'description': self.description,
+            'sort_order': self.sort_order,
+            'plan_count': self.get_plan_count(),
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None
         }

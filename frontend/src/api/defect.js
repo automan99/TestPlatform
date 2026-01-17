@@ -33,7 +33,19 @@ export const defectApi = {
   delete: (id) => request.delete(`/defects/${id}`),
 
   // 分配缺陷
-  assign: (id, data) => request.post(`/defects/${id}/assign`, data)
+  assign: (id, data) => request.post(`/defects/${id}/assign`, data),
+
+  // 获取模块列表
+  getModules: (projectId) => request.get('/defect-modules', { params: { project_id: projectId } }),
+
+  // 创建模块
+  createModule: (data) => request.post('/defect-modules', data),
+
+  // 更新模块
+  updateModule: (data) => request.put(`/defect-modules/${data.id}`, data),
+
+  // 删除模块
+  deleteModule: (id) => request.delete(`/defect-modules/${id}`)
 }
 
 // 缺陷评论API

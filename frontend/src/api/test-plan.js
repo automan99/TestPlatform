@@ -41,3 +41,21 @@ export const testExecutionApi = {
   // 更新测试执行
   update: (id, data) => request.put(`/test-executions/${id}`, data)
 }
+
+// 测试计划目录API
+export const testPlanFolderApi = {
+  // 获取目录树
+  getTree: (params) => request.get('/test-plan-folders', { params }),
+
+  // 获取目录详情
+  getDetail: (id) => request.get(`/test-plan-folders/${id}`),
+
+  // 创建目录
+  create: (data) => request.post('/test-plan-folders', data),
+
+  // 更新目录
+  update: (id, data) => request.put(`/test-plan-folders/${id}`, data),
+
+  // 删除目录
+  delete: (id) => request.delete(`/test-plan-folders/${id}`)
+}

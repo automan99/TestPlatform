@@ -281,3 +281,117 @@ class MyTenantAPI(Resource):
         except Exception as e:
             current_app.logger.error(f'获取用户租户失败: {str(e)}')
             return error_response(message=f'获取用户租户失败: {str(e)}', code=500)
+
+
+# ============== 租户成员管理API ==============
+
+@tenant_ns.route('/<int:tenant_id>/members')
+class TenantMembersAPI(Resource):
+    """租户成员管理API"""
+
+    def get(self, tenant_id):
+        """获取租户成员列表"""
+        try:
+            tenant = Tenant.query.filter_by(id=tenant_id, is_deleted=False).first_or_404()
+
+            tenant_users = TenantUser.query.filter_by(
+                tenant_id=tenant_id,
+                is_deleted=False
+            ).all()
+
+            # 获取用户信息
+            from app.models import User
+            members_data = []
+            for tu in tenant_users:
+                user = User.query.get(tu.user_id)
+                if user:
+                    member_dict = {
+                        'id': tu.id,
+                        'user_id': tu.user_id,
+                        'username': user.username,
+                        'real_name': user.real_name,
+                        'email': user.email,
+                        'role': tu.role,
+                        'is_default': tu.is_default,
+                        'created_at': tu.created_at.isoformat() if tu.created_at else None
+                    }
+                    members_data.append(member_dict)
+
+            return success_response(data=members_data)
+        except Exception as e:
+            current_app.logger.error(f'获取租户成员失败: {str(e)}')
+            return error_response(message=f'获取租户成员失败: {str(e)}', code=500)
+
+    def post(self, tenant_id):
+        """添加成员到租户"""
+        try:
+            data = request.get_json()
+            user_id = data.get('user_id')
+            role = data.get('role', 'member')
+
+            if not user_id:
+                return error_response(message='用户ID不能为空', code=400)
+
+            # 检查租户是否存在
+            tenant = Tenant.query.filter_by(id=tenant_id, is_deleted=False).first_or_404()
+
+            # 检查用户是否已在该租户中
+            existing = TenantUser.query.filter_by(
+                tenant_id=tenant_id,
+                user_id=user_id,
+                is_deleted=False
+            ).first()
+            if existing:
+                return error_response(message='用户已在该租户中', code=400)
+
+            # 检查用户是否存在
+            from app.models import User
+            user = User.query.get(user_id)
+            if not user:
+                return error_response(message='用户不存在', code=404)
+
+            # 添加成员
+            tenant_user = TenantUser(
+                tenant_id=tenant_id,
+                user_id=user_id,
+                role=role,
+                is_default=False,
+                created_by=g.get('user_id')
+            )
+
+            db.session.add(tenant_user)
+            db.session.commit()
+
+            return success_response(message='添加成员成功', code=201)
+        except Exception as e:
+            db.session.rollback()
+            current_app.logger.error(f'添加租户成员失败: {str(e)}')
+            return error_response(message=f'添加租户成员失败: {str(e)}', code=500)
+
+
+@tenant_ns.route('/<int:tenant_id>/members/<int:user_id>')
+class TenantMemberAPI(Resource):
+    """租户成员详情API"""
+
+    def delete(self, tenant_id, user_id):
+        """从租户移除成员"""
+        try:
+            # 检查租户是否存在
+            tenant = Tenant.query.filter_by(id=tenant_id, is_deleted=False).first_or_404()
+
+            # 获取租户用户关联
+            tenant_user = TenantUser.query.filter_by(
+                tenant_id=tenant_id,
+                user_id=user_id,
+                is_deleted=False
+            ).first_or_404()
+
+            # 软删除
+            tenant_user.is_deleted = True
+            db.session.commit()
+
+            return success_response(message='移除成员成功')
+        except Exception as e:
+            db.session.rollback()
+            current_app.logger.error(f'移除租户成员失败: {str(e)}')
+            return error_response(message=f'移除租户成员失败: {str(e)}', code=500)

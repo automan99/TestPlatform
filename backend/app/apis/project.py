@@ -89,6 +89,16 @@ class ProjectListAPI(Resource):
         try:
             data = request.get_json()
 
+            # 获取租户ID - 优先使用请求头中的租户ID
+            tenant_id = request.headers.get('X-Tenant-ID')
+            if not tenant_id:
+                return error_response(message='未指定租户', code=400)
+
+            try:
+                tenant_id = int(tenant_id)
+            except ValueError:
+                return error_response(message='租户ID格式错误', code=400)
+
             # 验证必填字段
             if not data.get('name'):
                 return error_response(message='项目名称不能为空')
@@ -104,9 +114,9 @@ class ProjectListAPI(Resource):
             if data.get('key') and Project.query.filter_by(key=data['key']).first():
                 return error_response(message='项目标识符已存在')
 
-            # 创建项目
+            # 创建项目 - 自动设置租户ID
             project = Project(
-                tenant_id=data.get('tenant_id'),
+                tenant_id=tenant_id,
                 name=data['name'],
                 code=data['code'],
                 description=data.get('description'),
@@ -324,9 +334,20 @@ class ProjectMembersAPI(Resource):
 
             from app.models import User, TenantUser
 
+            # 获取租户ID - 如果项目没有租户ID，使用请求头中的租户ID
+            tenant_id = project.tenant_id
+            if not tenant_id:
+                tenant_id = request.headers.get('X-Tenant-ID')
+                if not tenant_id:
+                    return error_response(message='未指定租户', code=400)
+                try:
+                    tenant_id = int(tenant_id)
+                except ValueError:
+                    return error_response(message='租户ID格式错误', code=400)
+
             # 获取租户下的所有用户
             tenant_users = TenantUser.query.filter_by(
-                tenant_id=project.tenant_id,
+                tenant_id=tenant_id,
                 is_deleted=False
             ).all()
 

@@ -17,8 +17,14 @@ export const tenantApi = {
   // 删除租户
   delete: (id) => request.delete(`/tenants/${id}`),
 
-  // 获取租户用户列表
-  getUsers: (tenantId) => request.get(`/tenants/${tenantId}/users`),
+  // 获取租户成员列表
+  getMembers: (tenantId) => request.get(`/tenants/${tenantId}/members`),
+
+  // 添加成员到租户
+  addMember: (tenantId, data) => request.post(`/tenants/${tenantId}/members`, data),
+
+  // 从租户移除成员
+  removeMember: (tenantId, userId) => request.delete(`/tenants/${tenantId}/members/${userId}`),
 
   // 切换租户
   switch: (tenantId) => request.post('/tenants/switch', { tenant_id: tenantId }),

@@ -220,7 +220,7 @@ watch(currentProjectId, (newVal) => {
 .stat-content {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 5px;
 }
 
 .stat-icon {

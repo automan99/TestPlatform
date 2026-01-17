@@ -20,9 +20,9 @@ api = Api(
 
 # 导入所有命名空间
 from app.apis.test_case import test_suite_ns, test_case_ns
-from app.apis.test_plan import test_plan_ns, test_execution_ns
+from app.apis.test_plan import test_plan_ns, test_execution_ns, test_plan_folder_ns
 from app.apis.test_env import test_environment_ns, environment_resource_ns
-from app.apis.defect import defect_ns, defect_workflow_ns, defect_comment_ns
+from app.apis.defect import defect_ns, defect_workflow_ns, defect_comment_ns, defect_module_ns
 from app.apis.test_report import test_report_ns, report_metric_ns
 from app.apis.tenant import tenant_ns
 from app.apis.auth import auth_ns
@@ -37,11 +37,13 @@ api.add_namespace(test_suite_ns, path='/test-suites')
 api.add_namespace(test_case_ns, path='/test-cases')
 api.add_namespace(test_plan_ns, path='/test-plans')
 api.add_namespace(test_execution_ns, path='/test-executions')
+api.add_namespace(test_plan_folder_ns, path='/test-plan-folders')
 api.add_namespace(test_environment_ns, path='/environments')
 api.add_namespace(environment_resource_ns, path='/environment-resources')
 api.add_namespace(defect_workflow_ns, path='/defect-workflows')
 api.add_namespace(defect_ns, path='/defects')
 api.add_namespace(defect_comment_ns, path='/defect-comments')
+api.add_namespace(defect_module_ns, path='/defect-modules')
 api.add_namespace(test_report_ns, path='/test-reports')
 api.add_namespace(report_metric_ns, path='/report-metrics')
 api.add_namespace(tenant_ns, path='/tenants')

@@ -15,9 +15,8 @@
         v-model="searchForm.keyword"
         :placeholder="t('common.search')"
         clearable
-        @clear="handleSearch"
-        @keyup.enter="handleSearch"
-        style="width: 300px; margin-right: 10px;"
+        @change="fetchProjects"
+        style="width: 200px"
       >
         <template #prefix>
           <el-icon><Search /></el-icon>
@@ -28,128 +27,122 @@
         v-model="searchForm.status"
         :placeholder="t('project.status')"
         clearable
-        @change="handleSearch"
-        style="width: 150px; margin-right: 10px;"
+        @change="fetchProjects"
+        style="width: 150px"
       >
         <el-option :label="t('project.statusActive')" value="active" />
         <el-option :label="t('project.statusArchived')" value="archived" />
         <el-option :label="t('project.statusCompleted')" value="completed" />
       </el-select>
 
-      <el-button type="primary" @click="handleSearch">
-        <el-icon><Search /></el-icon>
-        {{ t('common.search') }}
-      </el-button>
-      <el-button @click="handleReset">
-        <el-icon><RefreshLeft /></el-icon>
-        {{ t('common.reset') }}
-      </el-button>
+      <div style="flex: 1"></div>
     </div>
 
     <!-- 项目列表 -->
-    <el-table
-      v-loading="loading"
-      :data="projectList"
-      border
-      stripe
-      style="width: 100%"
-    >
-      <el-table-column prop="name" :label="t('project.name')" min-width="200">
-        <template #default="{ row }">
-          <div class="project-name">
-            <span
-              v-if="row.icon"
-              class="project-icon"
-              :style="{ backgroundColor: row.color }"
-            >
-              {{ row.icon }}
-            </span>
-            <span v-else
-              class="project-icon"
-              :style="{ backgroundColor: row.color }"
-            >
-              {{ row.name.charAt(0) }}
-            </span>
-            <span>{{ row.name }}</span>
-          </div>
-        </template>
-      </el-table-column>
+    <div class="table-container">
+      <el-table
+        v-loading="loading"
+        :data="projectList"
+      >
+        <el-table-column prop="name" :label="t('project.name')" min-width="200">
+          <template #default="{ row }">
+            <div class="project-name">
+              <span
+                v-if="row.icon"
+                class="project-icon"
+                :style="{ backgroundColor: row.color }"
+              >
+                {{ row.icon }}
+              </span>
+              <span v-else
+                class="project-icon"
+                :style="{ backgroundColor: row.color }"
+              >
+                {{ row.name.charAt(0) }}
+              </span>
+              <span>{{ row.name }}</span>
+            </div>
+          </template>
+        </el-table-column>
 
-      <el-table-column prop="code" :label="t('project.code')" width="120" />
+        <el-table-column prop="code" :label="t('project.code')" width="120" />
 
-      <el-table-column prop="key" :label="t('project.key')" width="100" />
+        <el-table-column prop="key" :label="t('project.key')" width="100" />
 
-      <el-table-column prop="project_type" :label="t('project.projectType')" width="120">
-        <template #default="{ row }">
-          <el-tag v-if="row.project_type === 'web'" size="small">{{ t('project.typeWeb') }}</el-tag>
-          <el-tag v-else-if="row.project_type === 'mobile'" type="success" size="small">
-            {{ t('project.typeMobile') }}
-          </el-tag>
-          <el-tag v-else-if="row.project_type === 'api'" type="warning" size="small">
-            {{ t('project.typeApi') }}
-          </el-tag>
-          <el-tag v-else type="info" size="small">{{ t('project.typeDesktop') }}</el-tag>
-        </template>
-      </el-table-column>
+        <el-table-column prop="project_type" :label="t('project.projectType')" width="120">
+          <template #default="{ row }">
+            <el-tag v-if="row.project_type === 'web'" size="small">{{ t('project.typeWeb') }}</el-tag>
+            <el-tag v-else-if="row.project_type === 'mobile'" type="success" size="small">
+              {{ t('project.typeMobile') }}
+            </el-tag>
+            <el-tag v-else-if="row.project_type === 'api'" type="warning" size="small">
+              {{ t('project.typeApi') }}
+            </el-tag>
+            <el-tag v-else type="info" size="small">{{ t('project.typeDesktop') }}</el-tag>
+          </template>
+        </el-table-column>
 
-      <el-table-column :label="t('project.testCaseCount')" width="100" align="center">
-        <template #default="{ row }">
-          <el-tag type="primary" size="small">{{ row.test_case_count || 0 }}</el-tag>
-        </template>
-      </el-table-column>
+        <el-table-column :label="t('project.testCaseCount')" width="100" align="center">
+          <template #default="{ row }">
+            <el-tag type="primary" size="small">{{ row.test_case_count || 0 }}</el-tag>
+          </template>
+        </el-table-column>
 
-      <el-table-column :label="t('project.testPlanCount')" width="100" align="center">
-        <template #default="{ row }">
-          <el-tag type="success" size="small">{{ row.test_plan_count || 0 }}</el-tag>
-        </template>
-      </el-table-column>
+        <el-table-column :label="t('project.testPlanCount')" width="100" align="center">
+          <template #default="{ row }">
+            <el-tag type="success" size="small">{{ row.test_plan_count || 0 }}</el-tag>
+          </template>
+        </el-table-column>
 
-      <el-table-column :label="t('project.defectCount')" width="100" align="center">
-        <template #default="{ row }">
-          <el-tag type="danger" size="small">{{ row.defect_count || 0 }}</el-tag>
-        </template>
-      </el-table-column>
+        <el-table-column :label="t('project.defectCount')" width="100" align="center">
+          <template #default="{ row }">
+            <el-tag type="danger" size="small">{{ row.defect_count || 0 }}</el-tag>
+          </template>
+        </el-table-column>
 
-      <el-table-column prop="status" :label="t('project.status')" width="100">
-        <template #default="{ row }">
-          <el-tag v-if="row.status === 'active'" type="success" size="small">
-            {{ t('project.statusActive') }}
-          </el-tag>
-          <el-tag v-else-if="row.status === 'archived'" type="info" size="small">
-            {{ t('project.statusArchived') }}
-          </el-tag>
-          <el-tag v-else type="warning" size="small">
-            {{ t('project.statusCompleted') }}
-          </el-tag>
-        </template>
-      </el-table-column>
+        <el-table-column prop="status" :label="t('project.status')" width="100">
+          <template #default="{ row }">
+            <el-tag v-if="row.status === 'active'" type="success" size="small">
+              {{ t('project.statusActive') }}
+            </el-tag>
+            <el-tag v-else-if="row.status === 'archived'" type="info" size="small">
+              {{ t('project.statusArchived') }}
+            </el-tag>
+            <el-tag v-else type="warning" size="small">
+              {{ t('project.statusCompleted') }}
+            </el-tag>
+          </template>
+        </el-table-column>
 
-      <el-table-column :label="t('common.operation')" width="200" fixed="right">
-        <template #default="{ row }">
-          <el-button link type="primary" size="small" @click="handleSwitch(row)">
-            {{ t('tenant.switch') }}
-          </el-button>
-          <el-button link type="primary" size="small" @click="handleEdit(row)">
-            {{ t('common.edit') }}
-          </el-button>
-          <el-button link type="danger" size="small" @click="handleDelete(row)">
-            {{ t('common.delete') }}
-          </el-button>
-        </template>
-      </el-table-column>
-    </el-table>
+        <el-table-column :label="t('common.operation')" width="140" fixed="right">
+          <template #default="{ row }">
+            <el-tooltip :content="t('common.edit')" placement="top">
+              <el-button link type="primary" size="small" @click="handleEdit(row)">
+                <el-icon><Edit /></el-icon>
+              </el-button>
+            </el-tooltip>
+            <el-tooltip :content="t('common.delete')" placement="top">
+              <el-button link type="danger" size="small" @click="handleDelete(row)">
+                <el-icon><Delete /></el-icon>
+              </el-button>
+            </el-tooltip>
+          </template>
+        </el-table-column>
+      </el-table>
+    </div>
 
     <!-- 分页 -->
-    <el-pagination
-      v-model:current-page="pagination.page"
-      v-model:page-size="pagination.per_page"
-      :page-sizes="[10, 20, 50, 100]"
-      :total="pagination.total"
-      layout="total, sizes, prev, pager, next, jumper"
-      @size-change="fetchProjects"
-      @current-change="fetchProjects"
-      style="margin-top: 20px; justify-content: flex-end"
-    />
+    <div class="pagination-container">
+      <el-pagination
+        v-model:current-page="pagination.page"
+        v-model:page-size="pagination.per_page"
+        :page-sizes="[10, 20, 50, 100]"
+        :total="pagination.total"
+        layout="total, sizes, prev, pager, next, jumper"
+        @size-change="fetchProjects"
+        @current-change="fetchProjects"
+      />
+    </div>
 
     <!-- 创建/编辑对话框 -->
     <el-dialog
@@ -249,7 +242,7 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus, Search, RefreshLeft } from '@element-plus/icons-vue'
+import { Plus, Search, RefreshLeft, Edit, Delete } from '@element-plus/icons-vue'
 import { projectApi } from '@/api/project'
 import { useI18n } from '@/i18n'
 import { useAppStore } from '@/store'
@@ -324,19 +317,6 @@ const fetchProjects = async () => {
   }
 }
 
-// 搜索
-const handleSearch = () => {
-  pagination.page = 1
-  fetchProjects()
-}
-
-// 重置
-const handleReset = () => {
-  searchForm.keyword = ''
-  searchForm.status = ''
-  handleSearch()
-}
-
 // 显示创建对话框
 const showCreateDialog = () => {
   dialogMode.value = 'create'
@@ -382,20 +362,6 @@ const handleDelete = (row) => {
       ElMessage.error('删除失败')
     }
   })
-}
-
-// 切换项目
-const handleSwitch = async (row) => {
-  try {
-    const res = await projectApi.switch(row.id)
-    if (res.code === 200) {
-      ElMessage.success(t('project.switchSuccess'))
-      // 更新当前项目
-      appStore.setCurrentProject(res.data.project)
-    }
-  } catch (error) {
-    ElMessage.error('切换项目失败')
-  }
 }
 
 // 提交表单
@@ -458,29 +424,55 @@ onMounted(() => {
 
 <style scoped>
 .projects-container {
-  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  background: #f5f7fa;
+  min-height: 100%;
 }
 
 .page-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  padding: 16px;
+  background: #fff;
+  border-radius: 4px;
 }
 
 .page-header h2 {
   margin: 0;
-  font-size: 24px;
+  font-size: 16px;
   font-weight: 500;
+  color: #303133;
 }
 
 .search-bar {
   display: flex;
   align-items: center;
-  margin-bottom: 20px;
+  gap: 12px;
   padding: 16px;
-  background: #f5f7fa;
+  background: #fff;
   border-radius: 4px;
+  flex-wrap: wrap;
+}
+
+.search-input {
+  width: 300px;
+}
+
+.search-select {
+  width: 150px;
+}
+
+.table-container {
+  background: #fff;
+  border-radius: 4px;
+  padding: 16px;
+}
+
+.data-table {
+  width: 100%;
 }
 
 .project-name {
@@ -499,5 +491,14 @@ onMounted(() => {
   color: white;
   font-weight: 500;
   font-size: 14px;
+  flex-shrink: 0;
+}
+
+.pagination-container {
+  display: flex;
+  justify-content: flex-end;
+  padding: 16px;
+  background: #fff;
+  border-radius: 4px;
 }
 </style>

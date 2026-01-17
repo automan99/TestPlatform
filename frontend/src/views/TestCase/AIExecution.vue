@@ -1,30 +1,46 @@
 <template>
   <div class="ai-execution-page">
-    <!-- 顶部导航栏 -->
-    <div class="top-header">
-      <div class="header-left">
-        <el-button :icon="ArrowLeft" text @click="handleBack">返回</el-button>
-        <el-divider direction="vertical" />
-        <span class="case-title">{{ pageTitle }}</span>
-      </div>
-      <div class="header-right">
-        <span class="host-info">执行主机: localhost</span>
-        <el-link type="primary" underline="never" @click="showLogsDialog = true">
-          <el-icon><Document /></el-icon>
-          查看执行日志
-        </el-link>
-      </div>
-    </div>
-
     <!-- 三栏布局 -->
-    <div class="three-column-layout">
+    <div class="three-column-layout" ref="layoutRef">
       <!-- 左侧：用例执行步骤 -->
-      <div class="left-panel">
+      <div class="left-panel" :style="{ width: leftPanelWidth + 'px' }">
         <div class="panel-header">
-          <span class="panel-title">用例执行</span>
-          <el-button type="primary" size="small" @click="handleExecuteAll">
-            执行
-          </el-button>
+          <span class="panel-title">AI执行步骤</span>
+          <div class="env-selector">
+            <el-select
+              v-model="selectedEnvironmentId"
+              placeholder="选择环境"
+              size="small"
+              @change="handleEnvironmentChange"
+            >
+              <el-option
+                v-for="env in environmentList"
+                :key="env.id"
+                :label="env.name"
+                :value="env.id"
+              />
+            </el-select>
+          </div>
+        </div>
+
+        <div class="steps-toolbar">
+          <div class="header-actions">
+            <el-tooltip content="执行" placement="top">
+              <el-button type="primary" :icon="VideoPlay" size="small" circle @click="handleExecuteAll" />
+            </el-tooltip>
+            <el-tooltip content="重新执行" placement="top">
+              <el-button :icon="Refresh" size="small" circle @click="handleReExecute" />
+            </el-tooltip>
+            <el-tooltip content="修改用例" placement="top">
+              <el-button :icon="Edit" size="small" circle @click="handleModifyCase" />
+            </el-tooltip>
+            <el-tooltip content="清除缓存" placement="top">
+              <el-button :icon="Delete" size="small" circle @click="handleClearCache" />
+            </el-tooltip>
+            <el-tooltip content="查看执行日志" placement="top">
+              <el-button :icon="Document" size="small" circle @click="showLogsDialog = true" />
+            </el-tooltip>
+          </div>
         </div>
 
         <div class="steps-container">
@@ -79,87 +95,116 @@
           </div>
         </div>
 
-        <!-- 底部操作按钮 -->
-        <div class="action-buttons">
-          <el-button :icon="Refresh" @click="handleReExecute">重新执行</el-button>
-          <el-button :icon="Edit" @click="handleModifyCase">修改用例</el-button>
-          <el-button :icon="Delete" @click="handleClearCache">清除缓存</el-button>
-        </div>
+
       </div>
+
+      <!-- 左侧分隔条 -->
+      <div
+        class="resize-handle resize-handle-left"
+        @mousedown="handleLeftMouseDown"
+      ></div>
 
       <!-- 中间：执行结果展示 -->
       <div class="center-panel">
-        <el-tabs v-model="activeTab" class="result-tabs">
-          <el-tab-pane label="屏幕截图" name="screenshot">
-            <div class="screenshot-viewer">
-              <div class="screenshot-nav">
-                <el-button :icon="ArrowLeft" size="small" @click="prevScreenshot" />
-                <span class="nav-title">{{ currentScreenshot?.title || '无' }}</span>
-                <el-button :icon="ArrowRight" size="small" @click="nextScreenshot" />
-              </div>
-              <div class="screenshot-content">
-                <div v-if="currentScreenshot?.before" class="screenshot-box">
-                  <div class="screenshot-label">执行前</div>
-                  <img :src="currentScreenshot.before" alt="执行前截图" />
-                </div>
-                <div v-if="currentScreenshot?.after" class="screenshot-box">
-                  <div class="screenshot-label">执行后</div>
-                  <img :src="currentScreenshot.after" alt="执行后截图" />
-                </div>
-                <el-empty v-if="!currentScreenshot" description="暂无截图" />
-              </div>
-            </div>
-          </el-tab-pane>
-
-          <el-tab-pane label="DOM快照" name="dom">
-            <div class="dom-viewer">
-              <pre class="dom-content">{{ domSnapshot || '暂无DOM快照数据' }}</pre>
-            </div>
-          </el-tab-pane>
-
-          <el-tab-pane label="测试用例" name="testcase">
-            <div class="testcase-view">
-              <div class="info-row">
-                <span class="label">用例名称:</span>
-                <span class="value">{{ caseInfo.name || '-' }}</span>
-              </div>
-              <div class="info-row">
-                <span class="label">用例编号:</span>
-                <span class="value">{{ caseInfo.caseNo || '-' }}</span>
-              </div>
-              <div class="info-row">
-                <span class="label">前置条件:</span>
-                <span class="value">{{ caseInfo.preconditions || '-' }}</span>
-              </div>
-              <div class="info-row">
-                <span class="label">测试步骤:</span>
-                <div class="steps-display">
-                  <div v-for="(step, idx) in caseSteps" :key="idx" class="step-row">
-                    <span class="step-num">{{ idx + 1 }}.</span>
-                    <span class="step-text">{{ step.step || step.description || '-' }}</span>
-                    <span class="step-expected">期望: {{ step.expected || '-' }}</span>
-                  </div>
-                  <div v-if="!caseSteps || caseSteps.length === 0" class="step-row">
-                    <span class="step-text">暂无步骤数据</span>
+        <div class="center-tabs-wrapper">
+          <el-tabs v-model="activeTab" class="result-tabs">
+            <el-tab-pane label="屏幕截图" name="screenshot">
+              <div class="screenshot-viewer">
+                <div class="screenshot-content">
+                  <el-empty v-if="!screenshots || screenshots.length === 0" description="暂无截图" />
+                  <div v-else>
+                    <!-- 当前截图显示 -->
+                    <div class="screenshot-box">
+                      <div v-if="currentScreenshot?.before" class="screenshot-item">
+                        <div class="screenshot-label">执行前</div>
+                        <img :src="currentScreenshot.before" alt="执行前截图" />
+                      </div>
+                      <div v-if="currentScreenshot?.after" class="screenshot-item">
+                        <div class="screenshot-label">执行后</div>
+                        <img :src="currentScreenshot.after" alt="执行后截图" />
+                      </div>
+                    </div>
+                    <!-- 轮播指示器 -->
+                    <div v-if="screenshots.length > 1" class="carousel-indicators">
+                      <span
+                        v-for="(screenshot, index) in screenshots"
+                        :key="index"
+                        :class="['indicator', { active: index === currentScreenshotIndex }]"
+                        @click="currentScreenshotIndex = index"
+                      ></span>
+                    </div>
                   </div>
                 </div>
               </div>
-              <div class="info-row">
-                <span class="label">预期结果:</span>
-                <span class="value">{{ caseInfo.expectedResult || '-' }}</span>
+            </el-tab-pane>
+
+            <el-tab-pane label="DOM快照" name="dom">
+              <div class="dom-viewer">
+                <pre class="dom-content">{{ domSnapshot || '暂无DOM快照数据' }}</pre>
               </div>
-            </div>
-          </el-tab-pane>
-        </el-tabs>
+            </el-tab-pane>
+
+            <el-tab-pane label="测试用例" name="testcase">
+              <div class="testcase-view">
+                <div class="info-row">
+                  <span class="label">用例名称:</span>
+                  <span class="value">{{ caseInfo.name || '-' }}</span>
+                </div>
+                <div class="info-row">
+                  <span class="label">用例编号:</span>
+                  <span class="value">{{ caseInfo.caseNo || '-' }}</span>
+                </div>
+                <div class="info-row">
+                  <span class="label">前置条件:</span>
+                  <span class="value">{{ caseInfo.preconditions || '-' }}</span>
+                </div>
+                <div class="info-row">
+                  <span class="label">测试步骤:</span>
+                  <div class="steps-display">
+                    <div v-for="(step, idx) in caseSteps" :key="idx" class="step-row">
+                      <span class="step-num">{{ idx + 1 }}.</span>
+                      <span class="step-text">{{ step.step || step.description || '-' }}</span>
+                      <span class="step-expected">期望: {{ step.expected || '-' }}</span>
+                    </div>
+                    <div v-if="!caseSteps || caseSteps.length === 0" class="step-row">
+                      <span class="step-text">暂无步骤数据</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="info-row">
+                  <span class="label">预期结果:</span>
+                  <span class="value">{{ caseInfo.expectedResult || '-' }}</span>
+                </div>
+              </div>
+            </el-tab-pane>
+          </el-tabs>
+        </div>
       </div>
 
+      <!-- 中间分隔条 -->
+      <div
+        class="resize-handle resize-handle-right"
+        @mousedown="handleRightMouseDown"
+      ></div>
+
       <!-- 右侧：任务信息 -->
-      <div class="right-panel">
+      <div class="right-panel" :class="{ collapsed: rightPanelCollapsed }" :style="{ width: rightPanelCollapsed ? '32px' : (rightPanelWidth + 'px') }">
         <div class="panel-header">
-          <span class="panel-title">任务信息</span>
+          <span class="panel-title" v-show="!rightPanelCollapsed">任务信息</span>
+          <el-button
+            type="primary"
+            link
+            size="small"
+            @click="toggleRightPanel"
+            class="collapse-btn"
+          >
+            <el-icon :class="{ 'is-collapsed': rightPanelCollapsed }">
+              <ArrowLeft />
+            </el-icon>
+          </el-button>
         </div>
 
-        <div class="task-info">
+        <div class="task-info" v-show="!rightPanelCollapsed">
           <!-- 执行状态 -->
           <div class="info-section">
             <div class="section-title">执行状态</div>
@@ -243,7 +288,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
@@ -251,9 +296,86 @@ import {
   CircleCheck, CircleClose, Loading, Tools
 } from '@element-plus/icons-vue'
 import { aiExecutionApi } from '@/api/ai-execution'
+import { environmentApi } from '@/api/environment'
 
 const router = useRouter()
 const route = useRoute()
+const layoutRef = ref()
+
+// 环境相关
+const environmentList = ref([])
+const selectedEnvironmentId = ref(null)
+
+// 面板宽度控制
+const leftPanelWidth = ref(300)
+const rightPanelWidth = ref(320)
+const rightPanelCollapsed = ref(false)
+const minWidth = 200
+const maxWidth = 600
+
+// 从 localStorage 恢复宽度
+const savedLeftWidth = localStorage.getItem('ai-exec-left-panel-width')
+const savedRightWidth = localStorage.getItem('ai-exec-right-panel-width')
+const savedRightCollapsed = localStorage.getItem('ai-exec-right-panel-collapsed')
+if (savedLeftWidth) leftPanelWidth.value = parseInt(savedLeftWidth)
+if (savedRightWidth) rightPanelWidth.value = parseInt(savedRightWidth)
+if (savedRightCollapsed) rightPanelCollapsed.value = savedRightCollapsed === 'true'
+
+// 监听宽度变化并保存
+watch(leftPanelWidth, (w) => localStorage.setItem('ai-exec-left-panel-width', w.toString()))
+watch(rightPanelWidth, (w) => localStorage.setItem('ai-exec-right-panel-width', w.toString()))
+watch(rightPanelCollapsed, (c) => localStorage.setItem('ai-exec-right-panel-collapsed', c.toString()))
+
+// 切换右侧面板
+function toggleRightPanel() {
+  rightPanelCollapsed.value = !rightPanelCollapsed.value
+}
+
+// 左侧分隔条拖拽
+function handleLeftMouseDown(e) {
+  const startX = e.clientX
+  const startWidth = leftPanelWidth.value
+
+  function onMouseMove(e) {
+    const delta = e.clientX - startX
+    const newWidth = Math.max(minWidth, Math.min(maxWidth, startWidth + delta))
+    leftPanelWidth.value = newWidth
+  }
+
+  function onMouseUp() {
+    document.removeEventListener('mousemove', onMouseMove)
+    document.removeEventListener('mouseup', onMouseUp)
+    document.body.style.cursor = ''
+  }
+
+  document.addEventListener('mousemove', onMouseMove)
+  document.addEventListener('mouseup', onMouseUp)
+  document.body.style.cursor = 'col-resize'
+}
+
+// 右侧分隔条拖拽
+function handleRightMouseDown(e) {
+  if (rightPanelCollapsed.value) return
+
+  const startX = e.clientX
+  const startWidth = rightPanelWidth.value
+
+  function onMouseMove(e) {
+    const delta = startX - e.clientX
+    const newWidth = Math.max(minWidth, Math.min(maxWidth, startWidth + delta))
+    rightPanelWidth.value = newWidth
+  }
+
+  function onMouseUp() {
+    document.removeEventListener('mousemove', onMouseMove)
+    document.removeEventListener('mouseup', onMouseUp)
+    document.body.style.cursor = ''
+  }
+
+  document.addEventListener('mousemove', onMouseMove)
+  document.addEventListener('mouseup', onMouseUp)
+  document.body.style.cursor = 'col-resize'
+}
 
 // 页面标题
 const pageTitle = ref('AI用例执行')
@@ -261,12 +383,10 @@ const pageTitle = ref('AI用例执行')
 // 活动标签
 const activeTab = ref('screenshot')
 const activeStepId = ref(null)
+const activeStep = ref(null)
 
 // 对话框显示状态
 const showLogsDialog = ref(false)
-
-// 截图相关
-const currentScreenshotIndex = ref(0)
 
 // 用例信息
 const caseInfo = ref({
@@ -336,6 +456,9 @@ const domSnapshot = ref('')
 // 截图列表
 const screenshots = ref([])
 
+// 当前截图索引
+const currentScreenshotIndex = ref(0)
+
 // 执行日志
 const executionLogs = ref([])
 
@@ -345,8 +468,35 @@ const selectedStepInfo = ref(null)
 // 轮询定时器
 let pollTimer = null
 
+// 轮播定时器
+let carouselTimer = null
+
 // 计算属性：当前截图
-const currentScreenshot = computed(() => screenshots.value[currentScreenshotIndex.value])
+const currentScreenshot = computed(() => screenshots.value[currentScreenshotIndex.value] || null)
+
+// 启动截图轮播
+function startCarousel() {
+  stopCarousel()
+  if (screenshots.value.length > 1) {
+    carouselTimer = setInterval(() => {
+      currentScreenshotIndex.value = (currentScreenshotIndex.value + 1) % screenshots.value.length
+    }, 3000) // 每3秒切换一次
+  }
+}
+
+// 停止截图轮播
+function stopCarousel() {
+  if (carouselTimer) {
+    clearInterval(carouselTimer)
+    carouselTimer = null
+  }
+}
+
+// 监听截图列表变化，自动启动轮播
+watch(screenshots, () => {
+  currentScreenshotIndex.value = 0
+  startCarousel()
+})
 
 // 获取状态标签类型
 function getStatusTagType(status) {
@@ -381,7 +531,9 @@ function toggleGroup(groupId) {
 // 选择步骤
 function selectStep(step) {
   activeStepId.value = step.id
+  activeStep.value = step
   selectedStepInfo.value = step
+  activeTab.value = 'testcase'
   updateTaskInfo(step)
 }
 
@@ -472,26 +624,6 @@ function handleClearCache() {
     .catch(() => {})
 }
 
-// 返回
-function handleBack() {
-  stopPolling()
-  router.back()
-}
-
-// 上一个截图
-function prevScreenshot() {
-  if (currentScreenshotIndex.value > 0) {
-    currentScreenshotIndex.value--
-  }
-}
-
-// 下一个截图
-function nextScreenshot() {
-  if (currentScreenshotIndex.value < screenshots.value.length - 1) {
-    currentScreenshotIndex.value++
-  }
-}
-
 // 轮询状态
 async function pollStatus() {
   try {
@@ -537,15 +669,43 @@ function stopPolling() {
 
 // 组件挂载
 onMounted(() => {
+  // 加载环境列表
+  loadEnvironments()
   // 如果有执行ID，开始轮询
   if (route.query.executionId) {
     startPolling()
   }
 })
 
+// 加载环境列表
+async function loadEnvironments() {
+  try {
+    const res = await environmentApi.getList({
+      per_page: 100
+    })
+    environmentList.value = res.data?.items || []
+    // 如果URL中有environmentId，设置选中的环境
+    if (route.query.environmentId) {
+      selectedEnvironmentId.value = parseInt(route.query.environmentId)
+    } else if (environmentList.value.length > 0) {
+      // 默认选择第一个环境
+      selectedEnvironmentId.value = environmentList.value[0].id
+    }
+  } catch (error) {
+    console.error('加载环境列表失败:', error)
+  }
+}
+
+// 切换环境
+function handleEnvironmentChange(envId) {
+  console.log('切换环境:', envId)
+  // 这里可以添加切换环境后的逻辑
+}
+
 // 组件卸载
 onUnmounted(() => {
   stopPolling()
+  stopCarousel()
 })
 </script>
 
@@ -553,58 +713,41 @@ onUnmounted(() => {
 .ai-execution-page {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 5px;
   background: #f5f7fa;
   height: 100%;
   overflow: hidden;
 }
 
-/* 顶部导航栏 */
-.top-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px 16px;
-  background: #fff;
-  border-radius: 4px;
-  flex-shrink: 0;
-}
-
-.header-left {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.case-title {
-  font-size: 16px;
-  font-weight: 500;
-  color: #303133;
-}
-
-.header-right {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.host-info {
-  font-size: 14px;
-  color: #909399;
-}
-
 /* 三栏布局 */
 .three-column-layout {
   display: flex;
-  gap: 16px;
   flex: 1;
   overflow: hidden;
 }
 
+/* 分隔条 */
+.resize-handle {
+  width: 6px;
+  flex-shrink: 0;
+  background: #f0f2f5;
+  cursor: col-resize;
+  transition: background-color 0.2s;
+  position: relative;
+  z-index: 10;
+}
+
+.resize-handle:hover {
+  background: #dcdfe6;
+}
+
+.resize-handle:active {
+  background: #c0c4cc;
+}
+
 /* 左侧面板 */
 .left-panel {
-  width: 25%;
-  min-width: 250px;
+  flex-shrink: 0;
   background: #fff;
   border-radius: 4px;
   display: flex;
@@ -621,10 +764,49 @@ onUnmounted(() => {
   flex-shrink: 0;
 }
 
+.collapse-btn {
+  padding: 4px;
+}
+
+.collapse-btn .el-icon {
+  transition: transform 0.3s;
+}
+
+.collapse-btn .el-icon.is-collapsed {
+  transform: rotate(180deg);
+}
+
 .panel-title {
   font-size: 15px;
   font-weight: 500;
   color: #303133;
+  flex-shrink: 0;
+}
+
+.env-selector {
+  flex: 1;
+  margin-left: 16px;
+  max-width: 180px;
+}
+
+.header-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.host-info {
+  font-size: 12px;
+  color: #909399;
+}
+
+.steps-toolbar {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-bottom: 1px solid #e4e7ed;
+  flex-shrink: 0;
 }
 
 .steps-container {
@@ -729,19 +911,6 @@ onUnmounted(() => {
   text-overflow: ellipsis;
 }
 
-.action-buttons {
-  display: flex;
-  border-top: 1px solid #e4e7ed;
-  padding: 12px;
-  gap: 8px;
-  flex-shrink: 0;
-}
-
-.action-buttons .el-button {
-  flex: 1;
-  font-size: 14px;
-}
-
 /* 中间面板 */
 .center-panel {
   flex: 1;
@@ -753,11 +922,41 @@ onUnmounted(() => {
   min-width: 0;
 }
 
+.center-tabs-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+}
+
 .result-tabs {
   flex: 1;
   display: flex;
   flex-direction: column;
   overflow: hidden;
+}
+
+.result-tabs :deep(.el-tabs__header) {
+  margin: 0;
+  border-bottom: none;
+}
+
+.result-tabs :deep(.el-tabs__nav-wrap) {
+  padding: 0 16px;
+}
+
+.result-tabs :deep(.el-tabs__item) {
+  padding: 0 16px;
+  border: none;
+}
+
+.result-tabs :deep(.el-tabs__item.is-active) {
+  color: #409eff;
+}
+
+.result-tabs :deep(.el-tabs__active-bar) {
+  display: none;
 }
 
 .result-tabs :deep(.el-tabs__content) {
@@ -782,7 +981,7 @@ onUnmounted(() => {
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 16px;
+  gap: 5px;
   padding: 12px 16px;
   border-bottom: 1px solid #e4e7ed;
   flex-shrink: 0;
@@ -799,10 +998,21 @@ onUnmounted(() => {
   padding: 16px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+}
+
+.screenshot-content > :not(:last-child) {
+  border-bottom: 1px solid #e4e7ed;
+  padding-bottom: 16px;
+  margin-bottom: 16px;
 }
 
 .screenshot-box {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.screenshot-item {
   border: 1px solid #e4e7ed;
   border-radius: 4px;
   overflow: hidden;
@@ -816,10 +1026,33 @@ onUnmounted(() => {
   border-bottom: 1px solid #e4e7ed;
 }
 
-.screenshot-box img {
+.screenshot-item img {
   width: 100%;
   height: auto;
   display: block;
+}
+
+/* 轮播指示器 */
+.carousel-indicators {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #d9d9d9;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.indicator.active {
+  background: #409eff;
+  transform: scale(1.2);
 }
 
 /* DOM查看器 */
@@ -905,13 +1138,21 @@ onUnmounted(() => {
 
 /* 右侧面板 */
 .right-panel {
-  width: 25%;
-  min-width: 250px;
+  flex-shrink: 0;
   background: #fff;
   border-radius: 4px;
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  transition: width 0.3s ease;
+}
+
+.right-panel.collapsed .panel-header {
+  padding: 12px 8px;
+}
+
+.right-panel.collapsed .collapse-btn {
+  margin: 0 auto;
 }
 
 .task-info {
@@ -959,7 +1200,12 @@ onUnmounted(() => {
 .tool-list {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+}
+
+.tool-list > :not(:last-child) {
+  border-bottom: 1px solid #e4e7ed;
+  padding-bottom: 10px;
+  margin-bottom: 10px;
 }
 
 .tool-item {

@@ -145,7 +145,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAppStore } from '@/store'
 import { useI18n } from '@/i18n'
@@ -328,13 +328,13 @@ onMounted(async () => {
 .header-left {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 5px;
 }
 
 .header-right {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 5px;
 }
 
 .tenant-info {

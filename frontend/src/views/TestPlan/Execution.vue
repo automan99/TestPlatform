@@ -12,7 +12,8 @@
           <span>用例列表</span>
           <div class="header-actions">
             <el-button type="primary" @click="showAddCaseDialog">添加用例</el-button>
-            <el-button type="success" @click="handleRunAll">批量执行</el-button>
+            <el-button type="success" @click="handleBatchManualExecute">批量手工执行</el-button>
+            <el-button type="warning" @click="handleBatchAIExecute">批量AI执行</el-button>
           </div>
         </div>
       </template>
@@ -38,17 +39,31 @@
           </template>
         </el-table-column>
         <el-table-column prop="assignee" label="执行人" width="120" />
-        <el-table-column label="操作" width="150" fixed="right">
+        <el-table-column label="操作" width="180" fixed="right">
           <template #default="{ row }">
-            <el-button type="primary" link size="small" @click="handleExecute(row)">执行</el-button>
-            <el-button type="danger" link size="small" @click="handleRemove(row)">移除</el-button>
+            <el-tooltip content="手工执行" placement="top">
+              <el-button type="primary" link size="small" @click="handleManualExecute(row)">
+                <el-icon><VideoPlay /></el-icon>
+              </el-button>
+            </el-tooltip>
+            <el-tooltip content="AI执行" placement="top">
+              <el-button type="warning" link size="small" @click="handleAIExecute(row)">
+                <el-icon><MagicStick /></el-icon>
+              </el-button>
+            </el-tooltip>
+            <el-tooltip content="移除" placement="top">
+              <el-button type="danger" link size="small" @click="handleRemove(row)">
+                <el-icon><Delete /></el-icon>
+              </el-button>
+            </el-tooltip>
           </template>
         </el-table-column>
       </el-table>
 
       <div v-if="selectedCases.length > 0" style="margin-top: 16px">
         <el-button type="danger" @click="handleBatchRemove">批量移除 ({{ selectedCases.length }})</el-button>
-        <el-button type="success" @click="handleBatchExecute">批量执行 ({{ selectedCases.length }})</el-button>
+        <el-button type="success" @click="handleBatchManualExecute">批量手工执行 ({{ selectedCases.length }})</el-button>
+        <el-button type="warning" @click="handleBatchAIExecuteSelected">批量AI执行 ({{ selectedCases.length }})</el-button>
       </div>
     </el-card>
 
@@ -91,38 +106,86 @@
       </template>
     </el-dialog>
 
-    <!-- 执行结果对话框 -->
-    <el-dialog v-model="executeDialogVisible" title="执行测试用例" width="700px" destroy-on-close>
+    <!-- 手工执行结果对话框 -->
+    <el-dialog v-model="executeDialogVisible" title="手工执行测试用例" width="800px" destroy-on-close>
       <el-form :model="executeForm" label-width="100px">
         <el-form-item label="用例名称">
           <span>{{ currentCase?.name }}</span>
         </el-form-item>
-        <el-form-item label="执行结果">
+        <el-form-item label="前置条件">
+          <div class="condition-text">{{ currentCase?.preconditions || '无' }}</div>
+        </el-form-item>
+        <el-form-item label="测试步骤">
+          <el-table :data="getStepList(currentCase?.steps)" border style="width: 100%">
+            <el-table-column label="序号" width="60" align="center">
+              <template #default="{ $index }">
+                <span>{{ $index + 1 }}</span>
+              </template>
+            </el-table-column>
+            <el-table-column prop="step" label="步骤描述" />
+            <el-table-column prop="expected" label="期望结果" />
+          </el-table>
+        </el-form-item>
+        <el-form-item label="执行状态" required>
           <el-radio-group v-model="executeForm.status">
-            <el-radio label="passed">通过</el-radio>
-            <el-radio label="failed">失败</el-radio>
-            <el-radio label="blocked">阻塞</el-radio>
-            <el-radio label="skipped">跳过</el-radio>
+            <el-radio value="passed">通过</el-radio>
+            <el-radio value="failed">失败</el-radio>
+            <el-radio value="blocked">阻塞</el-radio>
+            <el-radio value="skipped">跳过</el-radio>
           </el-radio-group>
         </el-form-item>
         <el-form-item label="实际结果">
-          <el-input v-model="executeForm.actual_result" type="textarea" :rows="4" />
+          <el-input v-model="executeForm.actual_result" type="textarea" :rows="4" placeholder="请输入实际执行结果..." />
         </el-form-item>
         <el-form-item label="备注">
-          <el-input v-model="executeForm.notes" type="textarea" :rows="2" />
+          <el-input v-model="executeForm.notes" type="textarea" :rows="2" placeholder="其他备注信息..." />
+        </el-form-item>
+        <el-form-item label="执行时长(秒)">
+          <el-input-number v-model="executeForm.duration" :min="0" :max="99999" placeholder="执行时长" />
         </el-form-item>
         <el-form-item label="关联缺陷">
-          <el-button v-if="!executeForm.defect_ids" @click="handleCreateDefect">
-            新建缺陷
-          </el-button>
-          <el-tag v-else closable @close="executeForm.defect_ids = null">
-            已关联缺陷
-          </el-tag>
+          <div style="display: flex; gap: 8px; width: 100%">
+            <el-select
+              v-model="executeForm.defect_ids"
+              multiple
+              filterable
+              placeholder="选择已有缺陷"
+              style="flex: 1"
+            >
+              <el-option
+                v-for="defect in defectList"
+                :key="defect.id"
+                :label="`${defect.defect_no || `DEF-${defect.id}`} - ${defect.title}`"
+                :value="defect.id"
+              />
+            </el-select>
+            <el-button type="primary" @click="handleCreateDefect">创建缺陷</el-button>
+          </div>
         </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="executeDialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="handleSubmitExecution">提交</el-button>
+        <el-button type="primary" :loading="executing" @click="handleSubmitExecution">提交执行结果</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 选择执行环境对话框 -->
+    <el-dialog v-model="envDialogVisible" title="选择执行环境" width="500px" destroy-on-close>
+      <el-form label-width="100px">
+        <el-form-item label="执行环境" required>
+          <el-select v-model="selectedEnvironmentId" placeholder="请选择执行环境" style="width: 100%">
+            <el-option
+              v-for="env in environmentList"
+              :key="env.id"
+              :label="`${env.name} (${env.url || env.base_url})`"
+              :value="env.id"
+            />
+          </el-select>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="envDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="handleConfirmAIExecute">确定</el-button>
       </template>
     </el-dialog>
   </div>
@@ -132,8 +195,11 @@
 import { ref, reactive, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { VideoPlay, MagicStick, Delete } from '@element-plus/icons-vue'
 import { testPlanApi, testExecutionApi } from '@/api/test-plan'
 import { testCaseApi } from '@/api/test-case'
+import { environmentApi } from '@/api/environment'
+import { defectApi } from '@/api/defect'
 
 const route = useRoute()
 const router = useRouter()
@@ -145,11 +211,17 @@ const selectedCases = ref([])
 
 const addCaseDialogVisible = ref(false)
 const executeDialogVisible = ref(false)
+const envDialogVisible = ref(false)
+const executing = ref(false)
 const currentCase = ref(null)
+const pendingAIExecuteCases = ref([]) // 待AI执行的用例
 
 const availableCases = ref([])
 const selectedCasesToAdd = ref([])
 const suiteOptions = ref([])
+const environmentList = ref([])
+const defectList = ref([])
+const selectedEnvironmentId = ref(null)
 
 const caseSearchForm = reactive({
   keyword: '',
@@ -160,7 +232,8 @@ const executeForm = reactive({
   status: 'passed',
   actual_result: '',
   notes: '',
-  defect_ids: null
+  duration: 0,
+  defect_ids: []
 })
 
 function goBack() {
@@ -192,6 +265,42 @@ function getExecutionStatusText(status) {
     skipped: '跳过'
   }
   return map[status] || status
+}
+
+// 解析步骤列表
+function getStepList(steps) {
+  if (!steps) return [{ step: '无', expected: '无' }]
+
+  // 尝试解析 JSON
+  try {
+    let parsed = steps
+    // 如果是字符串，尝试解析
+    if (typeof steps === 'string') {
+      // 尝试直接解析
+      try {
+        parsed = JSON.parse(steps)
+      } catch {
+        // 如果失败，尝试去除转义字符后再解析
+        try {
+          // 处理被双重转义的情况
+          const unescaped = steps.replace(/\\"/g, '"').replace(/\\\\/g, '\\')
+          parsed = JSON.parse(unescaped)
+        } catch {
+          // 仍然失败，返回提示
+          return [{ step: '步骤格式错误', expected: '请检查数据格式' }]
+        }
+      }
+    }
+
+    // 确保是数组
+    if (Array.isArray(parsed)) {
+      return parsed.length > 0 ? parsed : [{ step: '无', expected: '无' }]
+    }
+  } catch (e) {
+    console.error('解析步骤失败:', e, steps)
+  }
+
+  return [{ step: '无', expected: '无' }]
 }
 
 async function loadPlanDetail() {
@@ -296,24 +405,123 @@ function handleBatchRemove() {
   })
 }
 
-function handleExecute(row) {
+// 手工执行单个用例
+function handleManualExecute(row) {
   currentCase.value = row
   executeForm.status = 'passed'
   executeForm.actual_result = ''
   executeForm.notes = ''
-  executeForm.defect_ids = null
+  executeForm.duration = 0
+  executeForm.defect_ids = []
   executeDialogVisible.value = true
+  loadDefects()
 }
 
-function handleBatchExecute() {
-  ElMessage.info('批量执行功能开发中...')
+// 加载缺陷列表
+async function loadDefects() {
+  try {
+    const res = await defectApi.getList({
+      per_page: 100
+    })
+    defectList.value = res.data?.items || []
+  } catch (error) {
+    console.error('加载缺陷列表失败:', error)
+  }
+}
+
+// 加载环境列表
+async function loadEnvironments() {
+  try {
+    const res = await environmentApi.getList({
+      per_page: 100
+    })
+    environmentList.value = res.data?.items || []
+  } catch (error) {
+    console.error('加载环境列表失败:', error)
+  }
+}
+
+// AI执行单个用例
+function handleAIExecute(row) {
+  pendingAIExecuteCases.value = [row]
+  envDialogVisible.value = true
+  loadEnvironments()
+}
+
+// 批量手工执行
+function handleBatchManualExecute() {
+  if (selectedCases.value.length === 0) {
+    ElMessage.warning('请先选择要执行的用例')
+    return
+  }
+  // 打开第一个用例的执行对话框
+  handleManualExecute(selectedCases.value[0])
+}
+
+// 批量AI执行
+function handleBatchAIExecute() {
+  // AI执行所有用例
+  if (caseList.value.length === 0) {
+    ElMessage.warning('当前计划没有用例')
+    return
+  }
+  pendingAIExecuteCases.value = [...caseList.value]
+  envDialogVisible.value = true
+  loadEnvironments()
+}
+
+// 批量AI执行选中的用例
+function handleBatchAIExecuteSelected() {
+  if (selectedCases.value.length === 0) {
+    ElMessage.warning('请先选择要执行的用例')
+    return
+  }
+  pendingAIExecuteCases.value = [...selectedCases.value]
+  envDialogVisible.value = true
+  loadEnvironments()
+}
+
+// 确认AI执行
+function handleConfirmAIExecute() {
+  if (!selectedEnvironmentId.value) {
+    ElMessage.warning('请选择执行环境')
+    return
+  }
+
+  envDialogVisible.value = false
+
+  const caseIds = pendingAIExecuteCases.value.map(c => c.test_case_id).join(',')
+
+  // 跳转到AI执行页面
+  router.push({
+    path: '/test-cases/ai-execution',
+    query: {
+      caseIds: caseIds,
+      environmentId: selectedEnvironmentId.value,
+      planId: planId.value
+    }
+  })
 }
 
 function handleCreateDefect() {
-  ElMessage.info('跳转到缺陷创建页面')
+  router.push({
+    path: '/defects',
+    query: {
+      action: 'create',
+      test_case_id: currentCase.value?.test_case_id,
+      test_result: executeForm.status === 'failed' ? executeForm.actual_result : ''
+    }
+  })
 }
 
+// 提交手工执行结果
 async function handleSubmitExecution() {
+  if (!executeForm.status) {
+    ElMessage.warning('请选择执行状态')
+    return
+  }
+
+  executing.value = true
   try {
     await testExecutionApi.create({
       test_plan_id: planId.value,
@@ -322,18 +530,19 @@ async function handleSubmitExecution() {
       status: executeForm.status,
       actual_result: executeForm.actual_result,
       notes: executeForm.notes,
+      duration: executeForm.duration,
+      defect_ids: executeForm.defect_ids,
       executed_by: 'current_user'
     })
     ElMessage.success('提交成功')
     executeDialogVisible.value = false
     loadPlanDetail()
   } catch (error) {
-    ElMessage.error('提交失败')
+    console.error('提交失败:', error)
+    ElMessage.error('提交失败: ' + (error.response?.data?.message || error.message))
+  } finally {
+    executing.value = false
   }
-}
-
-function handleRunAll() {
-  ElMessage.info('批量执行功能开发中...')
 }
 
 onMounted(() => {
@@ -362,5 +571,14 @@ onMounted(() => {
   display: flex;
   gap: 12px;
   margin-bottom: 16px;
+}
+
+.condition-text {
+  padding: 12px;
+  background-color: #f5f7fa;
+  border-radius: 4px;
+  min-height: 40px;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 </style>

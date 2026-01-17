@@ -45,7 +45,7 @@ class Config:
     API_PREFIX = os.getenv('API_PREFIX', '/api')
 
     # CORS配置
-    CORS_ORIGINS = ['http://localhost:5173', 'http://localhost:3000']
+    CORS_ORIGINS = ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:3000']
 
     # 分页配置
     ITEMS_PER_PAGE = 20
