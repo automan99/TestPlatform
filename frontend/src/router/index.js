@@ -28,6 +28,12 @@ const routes = [
         meta: { title: '测试用例', icon: 'Document' }
       },
       {
+        path: 'test-cases/ai-execution',
+        name: 'AIExecution',
+        component: () => import('@/views/TestCase/AIExecution.vue'),
+        meta: { title: 'AI执行', hidden: true }
+      },
+      {
         path: 'test-plans',
         name: 'TestPlans',
         component: () => import('@/views/TestPlan/Index.vue'),
@@ -68,12 +74,6 @@ const routes = [
         name: 'Projects',
         component: () => import('@/views/Projects.vue'),
         meta: { title: '项目管理', icon: 'FolderOpened' }
-      },
-      {
-        path: 'tenants',
-        name: 'Tenants',
-        component: () => import('@/views/Tenant/Index.vue'),
-        meta: { title: '租户管理', icon: 'OfficeBuilding' }
       },
       {
         path: 'settings',

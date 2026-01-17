@@ -92,8 +92,9 @@ class Project(db.Model):
             project_id=self.id
         ).count()
 
-        self.test_case_count = TestCase.query.filter_by(
-            is_deleted=False
+        self.test_case_count = TestCase.query.filter(
+            TestCase.is_deleted == False,
+            TestCase.suite_id.isnot(None)
         ).join(TestSuite).filter(TestSuite.project_id == self.id).count()
 
         self.test_plan_count = TestPlan.query.filter_by(

@@ -220,7 +220,7 @@ class TestCaseListAPI(Resource):
                 suite_id=data.get('suite_id'),
                 description=data.get('description'),
                 preconditions=data.get('preconditions'),
-                steps=json.dumps(data.get('steps')) if data.get('steps') else None,
+                steps=data.get('steps'),  # 前端已经序列化，直接使用
                 expected_result=data.get('expected_result'),
                 priority=data.get('priority', 'medium'),
                 case_type=data.get('case_type', 'functional'),
@@ -269,7 +269,7 @@ class TestCaseAPI(Resource):
             test_case.preconditions = data.get('preconditions', test_case.preconditions)
 
             if data.get('steps') is not None:
-                test_case.steps = json.dumps(data.get('steps'))
+                test_case.steps = data.get('steps')  # 前端已经序列化，直接使用
 
             test_case.expected_result = data.get('expected_result', test_case.expected_result)
             test_case.priority = data.get('priority', test_case.priority)

@@ -126,7 +126,14 @@
           </el-col>
           <el-col :span="12">
             <el-form-item label="分配给" prop="assigned_to">
-              <el-input v-model="form.assigned_to" />
+              <el-select v-model="form.assigned_to" placeholder="选择成员" clearable filterable style="width: 100%">
+                <el-option
+                  v-for="member in memberList"
+                  :key="member.id"
+                  :label="member.name"
+                  :value="member.name"
+                />
+              </el-select>
             </el-form-item>
           </el-col>
         </el-row>
@@ -173,6 +180,7 @@ import { ref, reactive, onMounted, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { defectApi } from '@/api/defect'
+import { projectApi } from '@/api/project'
 import { useProjectStore } from '@/store/project'
 
 const router = useRouter()
@@ -185,6 +193,9 @@ const currentProjectId = computed(() => projectStore.currentProject?.id)
 const dialogVisible = ref(false)
 const dialogTitle = ref('')
 const isEdit = ref(false)
+
+// 项目成员列表
+const memberList = ref([])
 
 const defectList = ref([])
 
@@ -263,6 +274,12 @@ async function loadDefects() {
   pagination.total = res.data?.total || 0
 }
 
+async function loadMembers() {
+  if (!currentProjectId.value) return
+  const res = await projectApi.getMembers(currentProjectId.value)
+  memberList.value = res.data?.items || []
+}
+
 function handleCreate() {
   isEdit.value = false
   dialogTitle.value = '新建缺陷'
@@ -283,6 +300,7 @@ function handleCreate() {
     actual_behavior: '',
     project_id: currentProjectId.value
   })
+  loadMembers()
   dialogVisible.value = true
 }
 
@@ -290,6 +308,7 @@ function handleEdit(row) {
   isEdit.value = true
   dialogTitle.value = '编辑缺陷'
   Object.assign(form, row)
+  loadMembers()
   dialogVisible.value = true
 }
 
@@ -323,6 +342,7 @@ function handleSubmit() {
 onMounted(() => {
   if (currentProjectId.value) {
     loadDefects()
+    loadMembers()
   }
 })
 
@@ -330,6 +350,7 @@ onMounted(() => {
 watch(currentProjectId, (newVal, oldVal) => {
   if (newVal && newVal !== oldVal) {
     loadDefects()
+    loadMembers()
   }
 })
 </script>

@@ -248,12 +248,12 @@ class ProjectStatisticsAPI(Resource):
 
             # 获取详细统计
             test_suites = TestSuite.query.filter_by(
-                project_id=project_id,
-                is_deleted=False
+                project_id=project_id
             ).count()
 
             test_cases = TestCase.query.filter(
-                TestCase.is_deleted == False
+                TestCase.is_deleted == False,
+                TestCase.suite_id.isnot(None)
             ).join(TestSuite).filter(TestSuite.project_id == project_id).count()
 
             test_plans = TestPlan.query.filter_by(project_id=project_id).count()
@@ -265,12 +265,19 @@ class ProjectStatisticsAPI(Resource):
                 TestSuite.project_id == project_id
             ).order_by(TestExecution.execution_time.desc()).limit(10).all()
 
+            # 获取通过的执行记录数
+            passed_executions = TestExecution.query.join(TestCase).join(TestSuite).filter(
+                TestSuite.project_id == project_id,
+                TestExecution.status == 'passed'
+            ).count()
+
             return success_response(data={
                 'project': project.to_dict(),
                 'test_suites': test_suites,
                 'test_cases': test_cases,
                 'test_plans': test_plans,
                 'defects': defects,
+                'passed_executions': passed_executions,
                 'recent_executions': [e.to_dict() for e in recent_executions]
             })
         except Exception as e:
@@ -302,3 +309,33 @@ class ProjectSwitchAPI(Resource):
             })
         except Exception as e:
             return error_response(message=f'切换项目失败: {str(e)}')
+
+
+@project_ns.route('/<int:project_id>/members')
+class ProjectMembersAPI(Resource):
+    @project_ns.doc('get_project_members')
+    def get(self, project_id):
+        """获取项目成员列表"""
+        try:
+            project = Project.query.filter_by(id=project_id, is_deleted=False).first()
+
+            if not project:
+                return error_response(message='项目不存在', code=404)
+
+            from app.models import User, TenantUser
+
+            # 获取租户下的所有用户
+            tenant_users = TenantUser.query.filter_by(
+                tenant_id=project.tenant_id,
+                is_deleted=False
+            ).all()
+
+            user_ids = [tu.user_id for tu in tenant_users]
+            users = User.query.filter(User.id.in_(user_ids), User.is_deleted == False).all()
+
+            return success_response(data={
+                'items': [{'id': u.id, 'name': u.real_name or u.username} for u in users],
+                'total': len(users)
+            })
+        except Exception as e:
+            return error_response(message=f'获取项目成员失败: {str(e)}')

@@ -3,7 +3,7 @@
     <el-aside :width="sidebarWidth" class="sidebar">
       <div class="logo">
         <el-icon :size="24"><Monitor /></el-icon>
-        <span v-show="!appStore.isSidebarCollapsed">{{ t('dashboard.title') }}</span>
+        <span v-show="!appStore.isSidebarCollapsed">{{ systemName }}</span>
       </div>
       <el-menu
         :default-active="currentRoute"
@@ -38,10 +38,6 @@
         <el-menu-item index="/projects">
           <el-icon><FolderOpened /></el-icon>
           <template #title>{{ t('project.title') }}</template>
-        </el-menu-item>
-        <el-menu-item index="/tenants">
-          <el-icon><OfficeBuilding /></el-icon>
-          <template #title>{{ t('tenant.title') }}</template>
         </el-menu-item>
         <el-menu-item index="/settings">
           <el-icon><Setting /></el-icon>
@@ -168,6 +164,24 @@ const { t } = useI18n()
 const tenantStore = useTenantStore()
 const projectStore = useProjectStore()
 
+// 系统名称
+const systemName = ref(t('dashboard.title'))
+
+// 加载系统名称
+function loadSystemName() {
+  const savedSettings = localStorage.getItem('systemSettings')
+  if (savedSettings) {
+    try {
+      const settings = JSON.parse(savedSettings)
+      if (settings.systemName) {
+        systemName.value = settings.systemName
+      }
+    } catch (e) {
+      console.error('Load system name failed:', e)
+    }
+  }
+}
+
 const currentRoute = computed(() => route.path)
 const currentRouteMeta = computed(() => route.meta)
 
@@ -207,21 +221,34 @@ function handleLogout() {
 }
 
 onMounted(async () => {
-  // 加载租户
-  await tenantStore.loadMyTenants()
-  if (!tenantStore.currentTenant && tenantStore.tenantList.length > 0) {
-    const savedTenantId = localStorage.getItem('currentTenantId')
-    if (savedTenantId) {
-      const tenant = tenantStore.tenantList.find(t => t.id === parseInt(savedTenantId))
-      if (tenant) {
-        tenantStore.currentTenant = tenant
-      }
-    }
+  // 加载系统名称
+  loadSystemName()
+
+  // 检查是否已登录
+  const token = localStorage.getItem('token')
+  if (!token) {
+    return
   }
 
-  // 加载项目
-  await projectStore.fetchProjects()
-  projectStore.init()
+  // 加载租户
+  try {
+    await tenantStore.loadMyTenants()
+    if (!tenantStore.currentTenant && tenantStore.tenantList.length > 0) {
+      const savedTenantId = localStorage.getItem('currentTenantId')
+      if (savedTenantId) {
+        const tenant = tenantStore.tenantList.find(t => t.id === parseInt(savedTenantId))
+        if (tenant) {
+          tenantStore.currentTenant = tenant
+        }
+      }
+    }
+
+    // 加载项目
+    await projectStore.fetchProjects()
+    projectStore.init()
+  } catch (error) {
+    console.error('初始化数据失败:', error)
+  }
 })
 </script>
 
@@ -381,6 +408,6 @@ onMounted(async () => {
 
 .main-content {
   background: #f5f7fa;
-  padding: 20px;
+  padding: 5px;
 }
 </style>

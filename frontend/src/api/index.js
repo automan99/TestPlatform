@@ -1,6 +1,9 @@
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
 
+let errorMessageShown = false
+let redirecting = false
+
 const request = axios.create({
   baseURL: '/api',
   timeout: 30000
@@ -41,13 +44,23 @@ request.interceptors.response.use(
     return res
   },
   (error) => {
-    const message = error.response?.data?.message || error.message || '网络错误'
-    ElMessage.error(message)
+    // 防止多个错误消息同时显示
+    if (!errorMessageShown) {
+      const message = error.response?.data?.message || error.message || '网络错误'
+      ElMessage.error(message)
+      errorMessageShown = true
+      setTimeout(() => {
+        errorMessageShown = false
+      }, 1000)
+    }
 
     // 处理401未授权
-    if (error.response?.status === 401) {
+    if (error.response?.status === 401 && !redirecting) {
+      redirecting = true
       localStorage.removeItem('token')
-      window.location.href = '/login'
+      setTimeout(() => {
+        window.location.href = '/login'
+      }, 100)
     }
 
     return Promise.reject(error)

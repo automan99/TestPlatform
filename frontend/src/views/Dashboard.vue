@@ -101,7 +101,14 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
+import { testPlanApi } from '@/api/test-plan'
+import { defectApi } from '@/api/defect'
+import { projectApi } from '@/api/project'
+import { useProjectStore } from '@/store/project'
+
+const projectStore = useProjectStore()
+const currentProjectId = computed(() => projectStore.currentProject?.id)
 
 const stats = ref({
   totalCases: 0,
@@ -134,26 +141,65 @@ function getSeverityType(severity) {
   return map[severity] || 'info'
 }
 
-onMounted(() => {
-  // 模拟数据
-  stats.value = {
-    totalCases: 1234,
-    passedCases: 856,
-    defects: 45,
-    runningPlans: 8
+// 加载统计数据
+async function loadStats() {
+  try {
+    if (!currentProjectId.value) return
+
+    // 并行加载统计数据
+    const [plansRes, defectsRes, statsRes] = await Promise.all([
+      testPlanApi.getList({
+        project_id: currentProjectId.value,
+        per_page: 100
+      }),
+      defectApi.getList({
+        project_id: currentProjectId.value,
+        per_page: 10
+      }),
+      projectApi.getStatistics(currentProjectId.value)
+    ])
+
+    // 计算统计数据
+    const plans = plansRes.data?.items || []
+    const defects = defectsRes.data?.items || []
+    const statistics = statsRes.data?.data || {}
+
+    stats.value = {
+      totalCases: statistics.test_cases || 0,
+      passedCases: statistics.passed_executions || 0,
+      defects: defects.length,
+      runningPlans: plans.filter(p => p.status === 'active').length
+    }
+
+    // 获取最近测试计划
+    recentPlans.value = plans.slice(0, 5).map(p => ({
+      name: p.name,
+      status: p.status,
+      progress: p.progress?.progress || 0
+    }))
+
+    // 获取最近缺陷
+    recentDefects.value = defects.slice(0, 5).map(d => ({
+      title: d.title,
+      severity: d.severity,
+      status: d.status
+    }))
+  } catch (error) {
+    console.error('加载统计数据失败:', error)
   }
+}
 
-  recentPlans.value = [
-    { name: 'V1.0回归测试', status: 'active', progress: 65 },
-    { name: '新功能测试', status: 'active', progress: 30 },
-    { name: '性能测试', status: 'draft', progress: 0 }
-  ]
+onMounted(() => {
+  if (currentProjectId.value) {
+    loadStats()
+  }
+})
 
-  recentDefects.value = [
-    { title: '登录失败', severity: 'critical', status: 'new' },
-    { title: '页面显示异常', severity: 'high', status: 'assigned' },
-    { title: '按钮无响应', severity: 'medium', status: 'in_progress' }
-  ]
+// 监听项目变化
+watch(currentProjectId, (newVal) => {
+  if (newVal) {
+    loadStats()
+  }
 })
 </script>
 

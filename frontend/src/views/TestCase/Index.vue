@@ -108,10 +108,11 @@
                 <el-tag :type="getStatusType(row.status)">{{ row.status }}</el-tag>
               </template>
             </el-table-column>
-            <el-table-column label="操作" width="280" fixed="right">
+            <el-table-column label="操作" width="320" fixed="right">
               <template #default="{ row }">
                 <el-button type="info" link size="small" @click="handleView(row)">查看</el-button>
                 <el-button type="success" link size="small" @click="handleExecute(row)">执行</el-button>
+                <el-button type="warning" link size="small" @click="handleAIExecute(row)">AI执行</el-button>
                 <el-button type="primary" link size="small" @click="handleEdit(row)">编辑</el-button>
                 <el-button type="danger" link size="small" @click="handleDelete(row)">删除</el-button>
               </template>
@@ -408,16 +409,23 @@
           </el-form-item>
 
           <el-form-item label="关联缺陷">
-            <el-select
-              v-model="executeForm.defect_ids"
-              multiple
-              filterable
-              allow-create
-              placeholder="输入缺陷编号或选择"
-              style="width: 100%"
-            >
-              <el-option label="新建缺陷" value="new" />
-            </el-select>
+            <div style="display: flex; gap: 8px; width: 100%">
+              <el-select
+                v-model="executeForm.defect_ids"
+                multiple
+                filterable
+                placeholder="选择已有缺陷"
+                style="flex: 1"
+              >
+                <el-option
+                  v-for="defect in defectList"
+                  :key="defect.id"
+                  :label="`${defect.defect_no || `DEF-${defect.id}`} - ${defect.title}`"
+                  :value="defect.id"
+                />
+              </el-select>
+              <el-button type="primary" @click="handleCreateDefect">创建缺陷</el-button>
+            </div>
           </el-form-item>
         </el-form>
       </div>
@@ -431,12 +439,16 @@
 
 <script setup>
 import { ref, reactive, onMounted, watch, computed } from 'vue'
+import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   Plus, Delete, Search, Folder
 } from '@element-plus/icons-vue'
 import { useTestCaseStore } from '@/store/test-case'
 import { useProjectStore } from '@/store/project'
+import { defectApi } from '@/api/defect'
+
+const router = useRouter()
 
 const testCaseStore = useTestCaseStore()
 const projectStore = useProjectStore()
@@ -469,6 +481,9 @@ const executeForm = reactive({
   duration: 0,
   defect_ids: []
 })
+
+// 缺陷列表
+const defectList = ref([])
 
 const searchForm = reactive({
   keyword: '',
@@ -718,15 +733,37 @@ function handleSubmit() {
 // 解析步骤列表
 function getStepList(steps) {
   if (!steps) return [{ step: '无', expected: '无' }]
+
+  // 尝试解析 JSON
   try {
-    const parsed = JSON.parse(steps)
+    let parsed = steps
+    // 如果是字符串，尝试解析
+    if (typeof steps === 'string') {
+      // 尝试直接解析
+      try {
+        parsed = JSON.parse(steps)
+      } catch {
+        // 如果失败，尝试去除转义字符后再解析
+        try {
+          // 处理被双重转义的情况
+          const unescaped = steps.replace(/\\"/g, '"').replace(/\\\\/g, '\\')
+          parsed = JSON.parse(unescaped)
+        } catch {
+          // 仍然失败，返回提示
+          return [{ step: '步骤格式错误', expected: '请检查数据格式' }]
+        }
+      }
+    }
+
+    // 确保是数组
     if (Array.isArray(parsed)) {
       return parsed.length > 0 ? parsed : [{ step: '无', expected: '无' }]
     }
-  } catch {
-    // ignore
+  } catch (e) {
+    console.error('解析步骤失败:', e, steps)
   }
-  return [{ step: steps || '无', expected: '无' }]
+
+  return [{ step: '无', expected: '无' }]
 }
 
 // 查看用例
@@ -746,7 +783,45 @@ function handleExecute(row) {
     duration: 0,
     defect_ids: []
   })
+  // 加载缺陷列表
+  loadDefects()
   executeDialogVisible.value = true
+}
+
+// AI执行用例
+function handleAIExecute(row) {
+  router.push({
+    path: '/test-cases/ai-execution',
+    query: {
+      caseIds: row.id,
+      environmentId: null
+    }
+  })
+}
+
+// 加载缺陷列表
+async function loadDefects() {
+  try {
+    const res = await defectApi.getList({
+      project_id: currentProjectId.value,
+      per_page: 100
+    })
+    defectList.value = res.data?.items || []
+  } catch (error) {
+    console.error('加载缺陷列表失败:', error)
+  }
+}
+
+// 创建缺陷
+function handleCreateDefect() {
+  router.push({
+    path: '/defects',
+    query: {
+      action: 'create',
+      test_case_id: executeCase.value?.id,
+      test_result: executeForm.status === 'failed' ? executeForm.actual_result : ''
+    }
+  })
 }
 
 // 提交执行结果

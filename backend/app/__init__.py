@@ -1,7 +1,7 @@
 """
 测试管理平台 - 应用工厂模式
 """
-from flask import Flask
+from flask import Flask, g, request
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_cors import CORS
@@ -47,5 +47,31 @@ def create_app(config_name=None):
     # 注册错误处理器
     from app.utils.errors import register_error_handlers
     register_error_handlers(app)
+
+    # 注册认证中间件
+    @app.before_request
+    def auth_middleware():
+        """认证中间件 - 验证token并设置g.user_id"""
+        # 跳过不需要认证的路径
+        skip_paths = ['/api/auth/login', '/api/oauth', '/api/doc', '/api/favicon.ico']
+        if any(request.path.startswith(path) for path in skip_paths):
+            return
+
+        # 从Authorization header获取token
+        auth_header = request.headers.get('Authorization', '')
+        if not auth_header or not auth_header.startswith('Bearer '):
+            return  # 没有token，继续处理（某些接口可能不需要认证）
+
+        token = auth_header.replace('Bearer ', '')
+
+        # 验证token格式：token_{user_id}_{username}
+        if token.startswith('token_'):
+            try:
+                parts = token.split('_')
+                if len(parts) >= 3:
+                    user_id = int(parts[1])
+                    g.user_id = user_id
+            except (ValueError, IndexError):
+                pass  # token格式错误，忽略
 
     return app

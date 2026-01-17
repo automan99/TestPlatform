@@ -20,6 +20,9 @@ export const projectApi = {
   // 获取项目统计信息
   getStatistics: (id) => request.get(`/projects/${id}/statistics`),
 
+  // 获取项目成员
+  getMembers: (id) => request.get(`/projects/${id}/members`),
+
   // 切换项目
   switch: (projectId) => request.post('/projects/switch', { project_id: projectId })
 }

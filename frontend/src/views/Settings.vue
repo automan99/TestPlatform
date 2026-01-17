@@ -35,6 +35,64 @@
           </el-form>
         </el-tab-pane>
 
+        <!-- 租户管理 -->
+        <el-tab-pane :label="t('tenant.title')" name="tenants">
+          <div class="toolbar">
+            <el-input
+              v-model="tenantSearch.keyword"
+              :placeholder="t('tenant.searchPlaceholder')"
+              clearable
+              style="width: 200px"
+              @change="loadTenants"
+            >
+              <template #prefix>
+                <el-icon><Search /></el-icon>
+              </template>
+            </el-input>
+            <el-select v-model="tenantSearch.status" :placeholder="t('tenant.status')" clearable @change="loadTenants">
+              <el-option :label="t('tenant.statusActive')" value="active" />
+              <el-option :label="t('tenant.statusSuspended')" value="suspended" />
+              <el-option :label="t('tenant.statusExpired')" value="expired" />
+            </el-select>
+            <div style="flex: 1"></div>
+            <el-button type="primary" :icon="Plus" @click="handleCreateTenant">{{ t('tenant.create') }}</el-button>
+          </div>
+          <el-table :data="tenantList" style="width: 100%">
+            <el-table-column prop="name" :label="t('tenant.name')" />
+            <el-table-column prop="code" :label="t('tenant.code')" width="120" />
+            <el-table-column prop="status" :label="t('tenant.status')" width="100">
+              <template #default="{ row }">
+                <el-tag :type="getTenantStatusType(row.status)">{{ getTenantStatusText(row.status) }}</el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column prop="users_count" :label="t('tenant.users')" width="100" />
+            <el-table-column prop="projects_count" :label="t('tenant.projects')" width="100" />
+            <el-table-column prop="max_users" :label="t('tenant.maxUsers')" width="100" />
+            <el-table-column prop="expire_date" :label="t('tenant.expireDate')" width="120">
+              <template #default="{ row }">
+                {{ row.expire_date || '-' }}
+              </template>
+            </el-table-column>
+            <el-table-column :label="t('common.operation')" width="180" fixed="right">
+              <template #default="{ row }">
+                <el-button type="primary" link size="small" @click="handleSwitchTenant(row)">{{ t('tenant.switch') }}</el-button>
+                <el-button type="primary" link size="small" @click="handleEditTenant(row)">{{ t('common.edit') }}</el-button>
+                <el-button type="danger" link size="small" @click="handleDeleteTenant(row)">{{ t('common.delete') }}</el-button>
+              </template>
+            </el-table-column>
+          </el-table>
+          <el-pagination
+            v-model:current-page="tenantPagination.page"
+            v-model:page-size="tenantPagination.pageSize"
+            :total="tenantPagination.total"
+            :page-sizes="[10, 20, 50, 100]"
+            layout="total, sizes, prev, pager, next, jumper"
+            @current-change="loadTenants"
+            @size-change="loadTenants"
+            style="margin-top: 20px; justify-content: flex-end"
+          />
+        </el-tab-pane>
+
         <!-- 成员管理 -->
         <el-tab-pane label="成员管理" name="members">
           <div class="toolbar">
@@ -277,6 +335,62 @@
         <el-button type="primary" @click="handleSubmitWorkflow">{{ t('common.confirm') }}</el-button>
       </template>
     </el-dialog>
+
+    <!-- 租户表单对话框 -->
+    <el-dialog v-model="tenantDialogVisible" :title="tenantDialogTitle" width="700px" destroy-on-close>
+      <el-form :model="tenantForm" :rules="tenantRules" ref="tenantFormRef" label-width="120px">
+        <el-row :gutter="20">
+          <el-col :span="12">
+            <el-form-item :label="t('tenant.name')" prop="name">
+              <el-input v-model="tenantForm.name" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item :label="t('tenant.code')" prop="code">
+              <el-input v-model="tenantForm.code" placeholder="e.g., acme" />
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-form-item :label="t('tenant.description')" prop="description">
+          <el-input v-model="tenantForm.description" type="textarea" :rows="3" />
+        </el-form-item>
+        <el-row :gutter="20">
+          <el-col :span="12">
+            <el-form-item :label="t('tenant.maxUsers')" prop="max_users">
+              <el-input-number v-model="tenantForm.max_users" :min="1" style="width: 100%" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item :label="t('tenant.maxProjects')" prop="max_projects">
+              <el-input-number v-model="tenantForm.max_projects" :min="1" style="width: 100%" />
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-row :gutter="20">
+          <el-col :span="12">
+            <el-form-item :label="t('tenant.maxStorage')" prop="max_storage_gb">
+              <el-input-number v-model="tenantForm.max_storage_gb" :min="1" style="width: 100%" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item :label="t('tenant.expireDate')" prop="expireDate">
+              <el-date-picker v-model="tenantForm.expireDate" type="date" placeholder="选择日期" style="width: 100%" />
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-form-item :label="t('tenant.status')" prop="status">
+          <el-select v-model="tenantForm.status" style="width: 100%">
+            <el-option :label="t('tenant.statusActive')" value="active" />
+            <el-option :label="t('tenant.statusSuspended')" value="suspended" />
+            <el-option :label="t('tenant.statusExpired')" value="expired" />
+          </el-select>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="tenantDialogVisible = false">{{ t('common.cancel') }}</el-button>
+        <el-button type="primary" @click="handleSubmitTenant">{{ t('common.confirm') }}</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -288,14 +402,50 @@ import { useI18n } from '@/i18n'
 import { Plus, Search } from '@element-plus/icons-vue'
 import { userApi } from '@/api/user'
 import { oauthApi } from '@/api/oauth'
+import { tenantApi } from '@/api/tenant'
+import { useTenantStore } from '@/store/tenant'
 
 const appStore = useAppStore()
 const { t, locale } = useI18n()
+const tenantStore = useTenantStore()
 const activeTab = ref('basic')
 const workflowDialogVisible = ref(false)
 const workflowDialogTitle = ref('')
 const workflowFormRef = ref()
 const isEditWorkflow = ref(false)
+
+// 租户管理相关
+const tenantDialogVisible = ref(false)
+const tenantDialogTitle = ref('')
+const tenantFormRef = ref()
+const isEditTenant = ref(false)
+const tenantList = ref([])
+const tenantSearch = reactive({
+  keyword: '',
+  status: ''
+})
+const tenantPagination = reactive({
+  page: 1,
+  pageSize: 20,
+  total: 0
+})
+
+const tenantForm = reactive({
+  id: null,
+  name: '',
+  code: '',
+  description: '',
+  max_users: 10,
+  max_projects: 5,
+  max_storage_gb: 10,
+  expireDate: '',
+  status: 'active'
+})
+
+const tenantRules = {
+  name: [{ required: true, message: '请输入租户名称', trigger: 'blur' }],
+  code: [{ required: true, message: '请输入租户代码', trigger: 'blur' }]
+}
 
 // 用户管理相关
 const userDialogVisible = ref(false)
@@ -370,6 +520,115 @@ const workflowList = ref([
   { id: 4, name: '已解决', code: 'resolved', color: '#67c23a', sort_order: 4, is_default: false },
   { id: 5, name: '已关闭', code: 'closed', color: '#909399', sort_order: 5, is_default: false }
 ])
+
+// 租户管理方法
+function getTenantStatusType(status) {
+  const map = { active: 'success', suspended: 'warning', expired: 'danger' }
+  return map[status] || 'info'
+}
+
+function getTenantStatusText(status) {
+  const map = { active: t('tenant.statusActive'), suspended: t('tenant.statusSuspended'), expired: t('tenant.statusExpired') }
+  return map[status] || status
+}
+
+async function loadTenants() {
+  try {
+    const res = await tenantApi.getList({
+      page: tenantPagination.page,
+      per_page: tenantPagination.pageSize,
+      ...tenantSearch
+    })
+    tenantList.value = res.data?.items || []
+    tenantPagination.total = res.data?.total || 0
+  } catch (error) {
+    ElMessage.error('加载租户列表失败')
+  }
+}
+
+function handleCreateTenant() {
+  isEditTenant.value = false
+  tenantDialogTitle.value = t('tenant.create')
+  Object.assign(tenantForm, {
+    id: null,
+    name: '',
+    code: '',
+    description: '',
+    max_users: 10,
+    max_projects: 5,
+    max_storage_gb: 10,
+    expireDate: '',
+    status: 'active'
+  })
+  tenantDialogVisible.value = true
+}
+
+function handleEditTenant(row) {
+  isEditTenant.value = true
+  tenantDialogTitle.value = t('tenant.edit')
+  Object.assign(tenantForm, {
+    id: row.id,
+    name: row.name,
+    code: row.code,
+    description: row.description,
+    max_users: row.max_users,
+    max_projects: row.max_projects,
+    max_storage_gb: row.max_storage_gb,
+    expireDate: row.expire_date || '',
+    status: row.status
+  })
+  tenantDialogVisible.value = true
+}
+
+function handleSubmitTenant() {
+  tenantFormRef.value.validate(async (valid) => {
+    if (valid) {
+      try {
+        const data = {
+          ...tenantForm,
+          expire_date: tenantForm.expireDate ? new Date(tenantForm.expireDate).toISOString().split('T')[0] : null
+        }
+        delete data.expireDate
+
+        if (isEditTenant.value) {
+          await tenantApi.update(tenantForm.id, data)
+          ElMessage.success(t('tenant.updateSuccess'))
+        } else {
+          await tenantApi.create(data)
+          ElMessage.success(t('tenant.createSuccess'))
+        }
+        tenantDialogVisible.value = false
+        loadTenants()
+      } catch (error) {
+        ElMessage.error(error.response?.data?.message || '操作失败')
+      }
+    }
+  })
+}
+
+async function handleSwitchTenant(row) {
+  try {
+    await tenantApi.switch(row.id)
+    await tenantStore.setCurrentTenant(row.id)
+    ElMessage.success(t('tenant.switchSuccess'))
+  } catch (error) {
+    ElMessage.error(error.response?.data?.message || t('tenant.switchFailed'))
+  }
+}
+
+function handleDeleteTenant(row) {
+  ElMessageBox.confirm(t('tenant.deleteConfirm'), t('common.confirm'), {
+    type: 'warning'
+  }).then(async () => {
+    try {
+      await tenantApi.delete(row.id)
+      ElMessage.success(t('tenant.deleteSuccess'))
+      loadTenants()
+    } catch (error) {
+      ElMessage.error('删除失败')
+    }
+  })
+}
 
 // 用户管理方法
 async function loadUsers() {
@@ -552,6 +811,7 @@ function handleTestEmail() {
 onMounted(() => {
   loadSettings()
   updateWorkflowRules()
+  loadTenants()
   loadUsers()
 })
 
