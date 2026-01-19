@@ -59,17 +59,22 @@
           <div class="toolbar">
             <el-input
               v-model="searchForm.keyword"
-              placeholder="搜索计划"
+              placeholder="搜索计划名称"
               clearable
               style="width: 200px"
               @change="loadPlans"
-            />
+            >
+              <template #prefix>
+                <el-icon><Search /></el-icon>
+              </template>
+            </el-input>
             <el-select v-model="searchForm.status" placeholder="状态" clearable @change="loadPlans">
               <el-option label="草稿" value="draft" />
               <el-option label="进行中" value="active" />
               <el-option label="已完成" value="completed" />
               <el-option label="已取消" value="cancelled" />
             </el-select>
+            <el-button :icon="Search" @click="showAdvancedSearch = true">高级搜索</el-button>
             <div style="flex: 1"></div>
             <el-button type="primary" :icon="Plus" @click="handleCreate">新建计划</el-button>
           </div>
@@ -276,6 +281,72 @@
         <el-button type="primary" @click="handleConfirmAIExecute">确定</el-button>
       </template>
     </el-dialog>
+
+    <!-- 高级搜索对话框 -->
+    <el-dialog v-model="showAdvancedSearch" title="高级搜索" width="600px" destroy-on-close>
+      <el-form :model="advancedSearchForm" label-width="100px">
+        <el-form-item label="计划编号">
+          <el-input v-model="advancedSearchForm.plan_no" placeholder="例如: TP-0001" clearable />
+        </el-form-item>
+        <el-form-item label="计划名称">
+          <el-input v-model="advancedSearchForm.name" placeholder="搜索计划名称" clearable />
+        </el-form-item>
+        <el-row :gutter="20">
+          <el-col :span="12">
+            <el-form-item label="状态">
+              <el-select v-model="advancedSearchForm.status" placeholder="选择状态" clearable style="width: 100%">
+                <el-option label="草稿" value="draft" />
+                <el-option label="进行中" value="active" />
+                <el-option label="已完成" value="completed" />
+                <el-option label="已取消" value="cancelled" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="优先级">
+              <el-select v-model="advancedSearchForm.priority" placeholder="选择优先级" clearable style="width: 100%">
+                <el-option label="高" value="high" />
+                <el-option label="中" value="medium" />
+                <el-option label="低" value="low" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-form-item label="指派给">
+          <el-input v-model="advancedSearchForm.assigned_to" placeholder="输入指派人用户名" clearable />
+        </el-form-item>
+        <el-form-item label="关键词">
+          <el-input v-model="advancedSearchForm.keyword" placeholder="搜索所有字段" clearable />
+        </el-form-item>
+        <el-form-item label="创建时间">
+          <el-date-picker
+            v-model="advancedSearchForm.created_at"
+            type="daterange"
+            range-separator="至"
+            start-placeholder="开始日期"
+            end-placeholder="结束日期"
+            value-format="YYYY-MM-DD"
+            style="width: 100%"
+          />
+        </el-form-item>
+        <el-form-item label="更新时间">
+          <el-date-picker
+            v-model="advancedSearchForm.updated_at"
+            type="daterange"
+            range-separator="至"
+            start-placeholder="开始日期"
+            end-placeholder="结束日期"
+            value-format="YYYY-MM-DD"
+            style="width: 100%"
+          />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="handleResetAdvancedSearch">重置</el-button>
+        <el-button @click="showAdvancedSearch = false">取消</el-button>
+        <el-button type="primary" @click="handleAdvancedSearch">搜索</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -283,7 +354,7 @@
 import { ref, reactive, onMounted, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus, List, Edit, VideoPlay, MagicStick, Delete, MoreFilled, Folder } from '@element-plus/icons-vue'
+import { Plus, List, Edit, VideoPlay, MagicStick, Delete, MoreFilled, Folder, Search } from '@element-plus/icons-vue'
 import { testPlanApi, testPlanFolderApi } from '@/api/test-plan'
 import { environmentApi } from '@/api/environment'
 import { userApi } from '@/api/user'
@@ -372,6 +443,18 @@ const searchForm = reactive({
   status: ''
 })
 
+const showAdvancedSearch = ref(false)
+const advancedSearchForm = reactive({
+  plan_no: '',
+  name: '',
+  status: '',
+  priority: '',
+  assigned_to: '',
+  keyword: '',
+  created_at: null,
+  updated_at: null
+})
+
 const pagination = reactive({
   page: 1,
   pageSize: 20,
@@ -446,15 +529,76 @@ function getProgressColor(percentage) {
 }
 
 async function loadPlans() {
-  const res = await testPlanApi.getList({
+  const params = {
     page: pagination.page,
     per_page: pagination.pageSize,
     project_id: currentProjectId.value,
-    folder_id: currentFolderId.value === 0 ? null : currentFolderId.value,
-    ...searchForm
-  })
+    folder_id: currentFolderId.value === 0 ? null : currentFolderId.value
+  }
+
+  // 基本搜索：只搜索名称
+  if (searchForm.keyword) {
+    params.name = searchForm.keyword
+  }
+  // 状态筛选
+  if (searchForm.status) {
+    params.status = searchForm.status
+  }
+
+  const res = await testPlanApi.getList(params)
   planList.value = res.data?.items || []
   pagination.total = res.data?.total || 0
+}
+
+// 高级搜索
+function handleAdvancedSearch() {
+  const params = {
+    page: 1,
+    per_page: pagination.pageSize,
+    project_id: currentProjectId.value,
+    folder_id: currentFolderId.value === 0 ? null : currentFolderId.value
+  }
+
+  // 添加高级搜索条件
+  if (advancedSearchForm.plan_no) params.plan_no = advancedSearchForm.plan_no
+  if (advancedSearchForm.name) params.name = advancedSearchForm.name
+  if (advancedSearchForm.status) params.status = advancedSearchForm.status
+  if (advancedSearchForm.priority) params.priority = advancedSearchForm.priority
+  if (advancedSearchForm.assigned_to) params.assigned_to = advancedSearchForm.assigned_to
+  if (advancedSearchForm.keyword) params.keyword = advancedSearchForm.keyword
+  if (advancedSearchForm.created_at && advancedSearchForm.created_at.length === 2) {
+    params.created_after = advancedSearchForm.created_at[0]
+    params.created_before = advancedSearchForm.created_at[1]
+  }
+  if (advancedSearchForm.updated_at && advancedSearchForm.updated_at.length === 2) {
+    params.updated_after = advancedSearchForm.updated_at[0]
+    params.updated_before = advancedSearchForm.updated_at[1]
+  }
+
+  // 同步到基本搜索的显示
+  searchForm.keyword = advancedSearchForm.name || advancedSearchForm.keyword || ''
+  searchForm.status = advancedSearchForm.status || ''
+
+  pagination.page = 1
+  testPlanApi.getList(params).then(res => {
+    planList.value = res.data?.items || []
+    pagination.total = res.data?.total || 0
+    showAdvancedSearch.value = false
+  })
+}
+
+// 重置高级搜索
+function handleResetAdvancedSearch() {
+  Object.assign(advancedSearchForm, {
+    plan_no: '',
+    name: '',
+    status: '',
+    priority: '',
+    assigned_to: '',
+    keyword: '',
+    created_at: null,
+    updated_at: null
+  })
 }
 
 async function loadFolderTree() {

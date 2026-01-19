@@ -56,7 +56,17 @@
       <div class="content-area">
         <el-card>
           <div class="toolbar">
-            <el-input v-model="searchForm.keyword" placeholder="搜索缺陷" clearable style="width: 200px" @change="loadDefects" />
+            <el-input
+              v-model="searchForm.keyword"
+              placeholder="搜索缺陷标题"
+              clearable
+              style="width: 200px"
+              @change="loadDefects"
+            >
+              <template #prefix>
+                <el-icon><Search /></el-icon>
+              </template>
+            </el-input>
             <el-select v-model="searchForm.severity" placeholder="严重程度" clearable @change="loadDefects">
               <el-option label="紧急" value="critical" />
               <el-option label="高" value="high" />
@@ -76,6 +86,7 @@
               <el-option label="已解决" value="resolved" />
               <el-option label="已关闭" value="closed" />
             </el-select>
+            <el-button :icon="Search" @click="showAdvancedSearch = true">高级搜索</el-button>
             <div style="flex: 1"></div>
             <el-button type="primary" :icon="Plus" @click="handleCreate">新建缺陷</el-button>
           </div>
@@ -269,6 +280,96 @@
         <el-button type="primary" @click="handleSubmit">确定</el-button>
       </template>
     </el-dialog>
+
+    <!-- 高级搜索对话框 -->
+    <el-dialog v-model="showAdvancedSearch" title="高级搜索" width="600px" destroy-on-close>
+      <el-form :model="advancedSearchForm" label-width="100px">
+        <el-form-item label="缺陷编号">
+          <el-input v-model="advancedSearchForm.defect_no" placeholder="例如: DEF-0001" clearable />
+        </el-form-item>
+        <el-form-item label="标题">
+          <el-input v-model="advancedSearchForm.title" placeholder="搜索标题" clearable />
+        </el-form-item>
+        <el-row :gutter="20">
+          <el-col :span="12">
+            <el-form-item label="严重程度">
+              <el-select v-model="advancedSearchForm.severity" placeholder="选择严重程度" clearable style="width: 100%">
+                <el-option label="紧急" value="critical" />
+                <el-option label="高" value="high" />
+                <el-option label="中" value="medium" />
+                <el-option label="低" value="low" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="优先级">
+              <el-select v-model="advancedSearchForm.priority" placeholder="选择优先级" clearable style="width: 100%">
+                <el-option label="紧急" value="urgent" />
+                <el-option label="高" value="high" />
+                <el-option label="中" value="medium" />
+                <el-option label="低" value="low" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-row :gutter="20">
+          <el-col :span="12">
+            <el-form-item label="状态">
+              <el-select v-model="advancedSearchForm.status" placeholder="选择状态" clearable style="width: 100%">
+                <el-option label="新建" value="new" />
+                <el-option label="已分配" value="assigned" />
+                <el-option label="进行中" value="in_progress" />
+                <el-option label="已解决" value="resolved" />
+                <el-option label="已关闭" value="closed" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="缺陷类型">
+              <el-select v-model="advancedSearchForm.defect_type" placeholder="选择类型" clearable style="width: 100%">
+                <el-option label="缺陷" value="bug" />
+                <el-option label="功能" value="feature" />
+                <el-option label="改进" value="improvement" />
+                <el-option label="任务" value="task" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-form-item label="分配给">
+          <el-input v-model="advancedSearchForm.assigned_to" placeholder="输入分配人姓名" clearable />
+        </el-form-item>
+        <el-form-item label="关键词">
+          <el-input v-model="advancedSearchForm.keyword" placeholder="搜索所有字段" clearable />
+        </el-form-item>
+        <el-form-item label="创建时间">
+          <el-date-picker
+            v-model="advancedSearchForm.created_at"
+            type="daterange"
+            range-separator="至"
+            start-placeholder="开始日期"
+            end-placeholder="结束日期"
+            value-format="YYYY-MM-DD"
+            style="width: 100%"
+          />
+        </el-form-item>
+        <el-form-item label="更新时间">
+          <el-date-picker
+            v-model="advancedSearchForm.updated_at"
+            type="daterange"
+            range-separator="至"
+            start-placeholder="开始日期"
+            end-placeholder="结束日期"
+            value-format="YYYY-MM-DD"
+            style="width: 100%"
+          />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="handleResetAdvancedSearch">重置</el-button>
+        <el-button @click="showAdvancedSearch = false">取消</el-button>
+        <el-button type="primary" @click="handleAdvancedSearch">搜索</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -276,7 +377,7 @@
 import { ref, reactive, onMounted, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { View, Edit, Delete, Plus, Folder, MoreFilled } from '@element-plus/icons-vue'
+import { View, Edit, Delete, Plus, Folder, MoreFilled, Search } from '@element-plus/icons-vue'
 import { defectApi } from '@/api/defect'
 import { projectApi } from '@/api/project'
 import { useProjectStore } from '@/store/project'
@@ -394,6 +495,20 @@ const searchForm = reactive({
   priority: '',
   status: '',
   module_id: null
+})
+
+const showAdvancedSearch = ref(false)
+const advancedSearchForm = reactive({
+  defect_no: '',
+  title: '',
+  severity: '',
+  priority: '',
+  status: '',
+  defect_type: '',
+  assigned_to: '',
+  keyword: '',
+  created_at: null,
+  updated_at: null
 })
 
 const pagination = reactive({
@@ -551,14 +666,88 @@ function handleModuleSubmit() {
 }
 
 async function loadDefects() {
-  const res = await defectApi.getList({
+  const params = {
     page: pagination.page,
     per_page: pagination.pageSize,
     project_id: currentProjectId.value,
-    ...searchForm
-  })
+    module_id: searchForm.module_id
+  }
+
+  // 基本搜索：只搜索标题
+  if (searchForm.keyword) {
+    params.title = searchForm.keyword
+  }
+  // 严重程度、优先级和状态筛选
+  if (searchForm.severity) {
+    params.severity = searchForm.severity
+  }
+  if (searchForm.priority) {
+    params.priority = searchForm.priority
+  }
+  if (searchForm.status) {
+    params.status = searchForm.status
+  }
+
+  const res = await defectApi.getList(params)
   defectList.value = res.data?.items || []
   pagination.total = res.data?.total || 0
+}
+
+// 高级搜索
+function handleAdvancedSearch() {
+  const params = {
+    page: 1,
+    per_page: pagination.pageSize,
+    project_id: currentProjectId.value,
+    module_id: searchForm.module_id
+  }
+
+  // 添加高级搜索条件
+  if (advancedSearchForm.defect_no) params.defect_no = advancedSearchForm.defect_no
+  if (advancedSearchForm.title) params.title = advancedSearchForm.title
+  if (advancedSearchForm.severity) params.severity = advancedSearchForm.severity
+  if (advancedSearchForm.priority) params.priority = advancedSearchForm.priority
+  if (advancedSearchForm.status) params.status = advancedSearchForm.status
+  if (advancedSearchForm.defect_type) params.defect_type = advancedSearchForm.defect_type
+  if (advancedSearchForm.assigned_to) params.assigned_to = advancedSearchForm.assigned_to
+  if (advancedSearchForm.keyword) params.keyword = advancedSearchForm.keyword
+  if (advancedSearchForm.created_at && advancedSearchForm.created_at.length === 2) {
+    params.created_after = advancedSearchForm.created_at[0]
+    params.created_before = advancedSearchForm.created_at[1]
+  }
+  if (advancedSearchForm.updated_at && advancedSearchForm.updated_at.length === 2) {
+    params.updated_after = advancedSearchForm.updated_at[0]
+    params.updated_before = advancedSearchForm.updated_at[1]
+  }
+
+  // 同步到基本搜索的显示
+  searchForm.keyword = advancedSearchForm.title || advancedSearchForm.keyword || ''
+  searchForm.severity = advancedSearchForm.severity || ''
+  searchForm.priority = advancedSearchForm.priority || ''
+  searchForm.status = advancedSearchForm.status || ''
+
+  pagination.page = 1
+  defectApi.getList(params).then(res => {
+    defectList.value = res.data?.items || []
+    pagination.total = res.data?.total || 0
+    showAdvancedSearch.value = false
+  })
+}
+
+// 重置高级搜索
+function handleResetAdvancedSearch() {
+  Object.assign(advancedSearchForm, {
+    defect_no: '',
+    title: '',
+    severity: '',
+    priority: '',
+    status: '',
+    defect_type: '',
+    assigned_to: '',
+    keyword: '',
+    created_at: null,
+    updated_at: null
+  })
 }
 
 async function loadMembers() {

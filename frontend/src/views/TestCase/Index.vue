@@ -63,7 +63,11 @@
               clearable
               style="width: 200px"
               @change="loadCases"
-            />
+            >
+              <template #prefix>
+                <el-icon><Search /></el-icon>
+              </template>
+            </el-input>
             <el-select v-model="searchForm.priority" placeholder="优先级" clearable @change="loadCases">
               <el-option label="紧急" value="critical" />
               <el-option label="高" value="high" />
@@ -75,6 +79,7 @@
               <el-option label="激活" value="active" />
               <el-option label="归档" value="archived" />
             </el-select>
+            <el-button :icon="Search" @click="showAdvancedSearch = true">高级搜索</el-button>
             <div style="flex: 1"></div>
             <el-button type="primary" :icon="Plus" @click="handleCreateCase">新建用例</el-button>
             <el-button
@@ -518,6 +523,103 @@
         <el-button type="primary" @click="handleConfirmAIExecute">确定</el-button>
       </template>
     </el-dialog>
+
+    <!-- 高级搜索对话框 -->
+    <el-dialog v-model="showAdvancedSearch" title="高级搜索" width="700px" destroy-on-close>
+      <el-form :model="advancedSearchForm" label-width="100px">
+        <el-row :gutter="20">
+          <el-col :span="12">
+            <el-form-item label="用例编号">
+              <el-input v-model="advancedSearchForm.case_no" placeholder="如: CASE-0001" clearable />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="用例名称">
+              <el-input v-model="advancedSearchForm.name" placeholder="输入用例名称" clearable />
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-row :gutter="20">
+          <el-col :span="12">
+            <el-form-item label="优先级">
+              <el-select v-model="advancedSearchForm.priority" placeholder="选择优先级" clearable style="width: 100%">
+                <el-option label="紧急" value="critical" />
+                <el-option label="高" value="high" />
+                <el-option label="中" value="medium" />
+                <el-option label="低" value="low" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="状态">
+              <el-select v-model="advancedSearchForm.status" placeholder="选择状态" clearable style="width: 100%">
+                <el-option label="草稿" value="draft" />
+                <el-option label="激活" value="active" />
+                <el-option label="归档" value="archived" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-row :gutter="20">
+          <el-col :span="12">
+            <el-form-item label="用例类型">
+              <el-select v-model="advancedSearchForm.case_type" placeholder="选择类型" clearable style="width: 100%">
+                <el-option label="功能测试" value="functional" />
+                <el-option label="性能测试" value="performance" />
+                <el-option label="安全测试" value="security" />
+                <el-option label="UI测试" value="ui" />
+                <el-option label="API测试" value="api" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="自动化状态">
+              <el-select v-model="advancedSearchForm.automation_status" placeholder="选择状态" clearable style="width: 100%">
+                <el-option label="手工" value="manual" />
+                <el-option label="自动化" value="automated" />
+                <el-option label="半自动化" value="semi-automated" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-row :gutter="20">
+          <el-col :span="12">
+            <el-form-item label="创建时间">
+              <el-date-picker
+                v-model="advancedSearchForm.created_at"
+                type="daterange"
+                range-separator="至"
+                start-placeholder="开始日期"
+                end-placeholder="结束日期"
+                value-format="YYYY-MM-DD"
+                style="width: 100%"
+              />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="更新时间">
+              <el-date-picker
+                v-model="advancedSearchForm.updated_at"
+                type="daterange"
+                range-separator="至"
+                start-placeholder="开始日期"
+                end-placeholder="结束日期"
+                value-format="YYYY-MM-DD"
+                style="width: 100%"
+              />
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-form-item label="关键词">
+          <el-input v-model="advancedSearchForm.keyword" placeholder="搜索用例名称、编号、步骤、期望结果" clearable />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="handleResetAdvancedSearch">重置</el-button>
+        <el-button @click="showAdvancedSearch = false">取消</el-button>
+        <el-button type="primary" @click="handleAdvancedSearch">搜索</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -526,7 +628,7 @@ import { ref, reactive, onMounted, watch, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
-  Plus, Delete, Folder, View, VideoPlay, MagicStick, Edit, MoreFilled
+  Plus, Delete, Folder, View, VideoPlay, MagicStick, Edit, MoreFilled, Search
 } from '@element-plus/icons-vue'
 import { useTestCaseStore } from '@/store/test-case'
 import { useProjectStore } from '@/store/project'
@@ -661,6 +763,20 @@ const envDialogVisible = ref(false)
 const environmentList = ref([])
 const selectedEnvironmentId = ref(null)
 const pendingAIExecuteCase = ref(null)
+
+// 高级搜索
+const showAdvancedSearch = ref(false)
+const advancedSearchForm = reactive({
+  case_no: '',
+  name: '',
+  priority: '',
+  status: '',
+  case_type: '',
+  automation_status: '',
+  keyword: '',
+  created_at: null,
+  updated_at: null
+})
 
 const searchForm = reactive({
   keyword: '',
@@ -809,15 +925,102 @@ function handleSuiteSubmit() {
 }
 
 async function loadCases() {
-  const res = await testCaseStore.fetchCases({
+  const params = {
     page: pagination.page,
     per_page: pagination.pageSize,
     suite_id: currentSuiteId.value,
-    project_id: currentProjectId.value,
-    ...searchForm
-  })
+    project_id: currentProjectId.value
+  }
+
+  // 基本搜索：只搜索名称
+  if (searchForm.keyword) {
+    params.name = searchForm.keyword
+  }
+  // 优先级和状态筛选
+  if (searchForm.priority) {
+    params.priority = searchForm.priority
+  }
+  if (searchForm.status) {
+    params.status = searchForm.status
+  }
+
+  const res = await testCaseStore.fetchCases(params)
   caseList.value = res.data?.items || []
   pagination.total = res.data?.total || 0
+}
+
+// 高级搜索处理
+function handleAdvancedSearch() {
+  // 构建搜索参数
+  const params = {
+    page: 1,
+    per_page: pagination.pageSize,
+    suite_id: currentSuiteId.value,
+    project_id: currentProjectId.value
+  }
+
+  // 添加高级搜索条件
+  if (advancedSearchForm.case_no) {
+    params.case_no = advancedSearchForm.case_no
+  }
+  if (advancedSearchForm.name) {
+    params.name = advancedSearchForm.name
+  }
+  if (advancedSearchForm.priority) {
+    params.priority = advancedSearchForm.priority
+  }
+  if (advancedSearchForm.status) {
+    params.status = advancedSearchForm.status
+  }
+  if (advancedSearchForm.case_type) {
+    params.case_type = advancedSearchForm.case_type
+  }
+  if (advancedSearchForm.automation_status) {
+    params.automation_status = advancedSearchForm.automation_status
+  }
+  if (advancedSearchForm.keyword) {
+    params.keyword = advancedSearchForm.keyword
+  }
+  if (advancedSearchForm.created_at && advancedSearchForm.created_at.length === 2) {
+    params.created_after = advancedSearchForm.created_at[0]
+    params.created_before = advancedSearchForm.created_at[1]
+  }
+  if (advancedSearchForm.updated_at && advancedSearchForm.updated_at.length === 2) {
+    params.updated_after = advancedSearchForm.updated_at[0]
+    params.updated_before = advancedSearchForm.updated_at[1]
+  }
+
+  // 同步到基本搜索的显示
+  searchForm.keyword = advancedSearchForm.name || advancedSearchForm.keyword || ''
+  searchForm.priority = advancedSearchForm.priority || ''
+  searchForm.status = advancedSearchForm.status || ''
+
+  pagination.page = 1
+  testCaseStore.fetchCases(params).then(res => {
+    caseList.value = res.data?.items || []
+    pagination.total = res.data?.total || 0
+    showAdvancedSearch.value = false
+  })
+}
+
+// 重置高级搜索
+function handleResetAdvancedSearch() {
+  Object.assign(advancedSearchForm, {
+    case_no: '',
+    name: '',
+    priority: '',
+    status: '',
+    case_type: '',
+    automation_status: '',
+    keyword: '',
+    created_at: null,
+    updated_at: null
+  })
+  searchForm.keyword = ''
+  searchForm.priority = ''
+  searchForm.status = ''
+  pagination.page = 1
+  loadCases()
 }
 
 function handleSelectionChange(selection) {

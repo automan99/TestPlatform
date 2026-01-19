@@ -4,7 +4,7 @@
       <div class="toolbar">
         <el-input
           v-model="searchForm.keyword"
-          :placeholder="t('common.search')"
+          placeholder="搜索项目名称"
           clearable
           @change="fetchProjects"
           style="width: 200px"
@@ -25,6 +25,8 @@
           <el-option :label="t('project.statusArchived')" value="archived" />
           <el-option :label="t('project.statusCompleted')" value="completed" />
         </el-select>
+
+        <el-button :icon="Search" @click="showAdvancedSearch = true">高级搜索</el-button>
 
         <div style="flex: 1"></div>
         <el-button type="primary" :icon="Plus" @click="showCreateDialog">
@@ -226,6 +228,72 @@
         </el-button>
       </template>
     </el-dialog>
+
+    <!-- 高级搜索对话框 -->
+    <el-dialog v-model="showAdvancedSearch" title="高级搜索" width="600px" destroy-on-close>
+      <el-form :model="advancedSearchForm" label-width="100px">
+        <el-form-item label="项目编码">
+          <el-input v-model="advancedSearchForm.code" placeholder="搜索项目编码" clearable />
+        </el-form-item>
+        <el-form-item label="项目名称">
+          <el-input v-model="advancedSearchForm.name" placeholder="搜索项目名称" clearable />
+        </el-form-item>
+        <el-form-item label="项目标识">
+          <el-input v-model="advancedSearchForm.key" placeholder="例如: TEST" clearable />
+        </el-form-item>
+        <el-row :gutter="20">
+          <el-col :span="12">
+            <el-form-item label="项目类型">
+              <el-select v-model="advancedSearchForm.project_type" placeholder="选择类型" clearable style="width: 100%">
+                <el-option label="Web项目" value="web" />
+                <el-option label="移动应用" value="mobile" />
+                <el-option label="API项目" value="api" />
+                <el-option label="桌面应用" value="desktop" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="状态">
+              <el-select v-model="advancedSearchForm.status" placeholder="选择状态" clearable style="width: 100%">
+                <el-option label="活跃" value="active" />
+                <el-option label="已归档" value="archived" />
+                <el-option label="已完成" value="completed" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-form-item label="关键词">
+          <el-input v-model="advancedSearchForm.keyword" placeholder="搜索所有字段" clearable />
+        </el-form-item>
+        <el-form-item label="创建时间">
+          <el-date-picker
+            v-model="advancedSearchForm.created_at"
+            type="daterange"
+            range-separator="至"
+            start-placeholder="开始日期"
+            end-placeholder="结束日期"
+            value-format="YYYY-MM-DD"
+            style="width: 100%"
+          />
+        </el-form-item>
+        <el-form-item label="更新时间">
+          <el-date-picker
+            v-model="advancedSearchForm.updated_at"
+            type="daterange"
+            range-separator="至"
+            start-placeholder="开始日期"
+            end-placeholder="结束日期"
+            value-format="YYYY-MM-DD"
+            style="width: 100%"
+          />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="handleResetAdvancedSearch">重置</el-button>
+        <el-button @click="showAdvancedSearch = false">取消</el-button>
+        <el-button type="primary" @click="handleAdvancedSearch">搜索</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -251,6 +319,18 @@ const currentProjectId = ref(null)
 const searchForm = reactive({
   keyword: '',
   status: ''
+})
+
+const showAdvancedSearch = ref(false)
+const advancedSearchForm = reactive({
+  code: '',
+  name: '',
+  key: '',
+  project_type: '',
+  status: '',
+  keyword: '',
+  created_at: null,
+  updated_at: null
 })
 
 // 分页
@@ -290,9 +370,18 @@ const fetchProjects = async () => {
   try {
     const params = {
       page: pagination.page,
-      per_page: pagination.per_page,
-      ...searchForm
+      per_page: pagination.per_page
     }
+
+    // 基本搜索：只搜索名称
+    if (searchForm.keyword) {
+      params.name = searchForm.keyword
+    }
+    // 状态筛选
+    if (searchForm.status) {
+      params.status = searchForm.status
+    }
+
     const res = await projectApi.getList(params)
     if (res.code === 200) {
       projectList.value = res.data.items
@@ -303,6 +392,62 @@ const fetchProjects = async () => {
   } finally {
     loading.value = false
   }
+}
+
+// 高级搜索
+const handleAdvancedSearch = () => {
+  const params = {
+    page: 1,
+    per_page: pagination.per_page
+  }
+
+  // 添加高级搜索条件
+  if (advancedSearchForm.code) params.code = advancedSearchForm.code
+  if (advancedSearchForm.name) params.name = advancedSearchForm.name
+  if (advancedSearchForm.key) params.key = advancedSearchForm.key
+  if (advancedSearchForm.project_type) params.project_type = advancedSearchForm.project_type
+  if (advancedSearchForm.status) params.status = advancedSearchForm.status
+  if (advancedSearchForm.keyword) params.keyword = advancedSearchForm.keyword
+  if (advancedSearchForm.created_at && advancedSearchForm.created_at.length === 2) {
+    params.created_after = advancedSearchForm.created_at[0]
+    params.created_before = advancedSearchForm.created_at[1]
+  }
+  if (advancedSearchForm.updated_at && advancedSearchForm.updated_at.length === 2) {
+    params.updated_after = advancedSearchForm.updated_at[0]
+    params.updated_before = advancedSearchForm.updated_at[1]
+  }
+
+  // 同步到基本搜索的显示
+  searchForm.keyword = advancedSearchForm.name || advancedSearchForm.keyword || ''
+  searchForm.status = advancedSearchForm.status || ''
+
+  pagination.page = 1
+  loading.value = true
+  projectApi.getList(params).then(res => {
+    if (res.code === 200) {
+      projectList.value = res.data.items
+      pagination.total = res.data.total
+      showAdvancedSearch.value = false
+    }
+  }).catch(() => {
+    ElMessage.error('获取项目列表失败')
+  }).finally(() => {
+    loading.value = false
+  })
+}
+
+// 重置高级搜索
+const handleResetAdvancedSearch = () => {
+  Object.assign(advancedSearchForm, {
+    code: '',
+    name: '',
+    key: '',
+    project_type: '',
+    status: '',
+    keyword: '',
+    created_at: null,
+    updated_at: null
+  })
 }
 
 // 显示创建对话框

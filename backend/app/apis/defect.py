@@ -216,18 +216,46 @@ class DefectListAPI(Resource):
         try:
             data = request.get_json()
 
+            # 生成缺陷编号
+            project_id = data.get('project_id')
+            if project_id:
+                # 获取项目下一个编号
+                from app.models import Project
+                project = Project.query.get(project_id)
+                prefix = project.key if project else 'DEF'
+            else:
+                prefix = 'DEF'
+
+            # 查找当前项目的最大编号
+            last_defect = Defect.query.filter(
+                Defect.defect_no.like(f'{prefix}-%')
+            ).order_by(Defect.id.desc()).first()
+
+            if last_defect and last_defect.defect_no:
+                try:
+                    last_num = int(last_defect.defect_no.split('-')[-1])
+                    new_num = last_num + 1
+                except:
+                    new_num = 1
+            else:
+                new_num = 1
+
+            defect_no = f'{prefix}-{new_num:04d}'
+
             # 处理日期
             due_date = None
             if data.get('due_date'):
                 due_date = datetime.strptime(data.get('due_date'), '%Y-%m-%d').date()
 
             defect = Defect(
+                defect_no=defect_no,
                 title=data.get('title'),
                 description=data.get('description'),
-                project_id=data.get('project_id'),
+                project_id=project_id,
                 test_case_id=data.get('test_case_id'),
                 test_execution_id=data.get('test_execution_id'),
                 test_plan_id=data.get('test_plan_id'),
+                module_id=data.get('module_id'),
                 severity=data.get('severity', 'medium'),
                 priority=data.get('priority', 'medium'),
                 status=data.get('status', 'new'),

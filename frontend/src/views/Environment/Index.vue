@@ -6,17 +6,22 @@
           <div class="toolbar">
             <el-input
               v-model="searchForm.keyword"
-              placeholder="搜索环境"
+              placeholder="搜索环境名称"
               clearable
               style="width: 200px"
               @change="loadEnvironments"
-            />
+            >
+              <template #prefix>
+                <el-icon><Search /></el-icon>
+              </template>
+            </el-input>
             <el-select v-model="searchForm.env_type" placeholder="环境类型" clearable @change="loadEnvironments">
               <el-option label="开发环境" value="dev" />
               <el-option label="测试环境" value="testing" />
               <el-option label="预发布环境" value="staging" />
               <el-option label="生产环境" value="production" />
             </el-select>
+            <el-button :icon="Search" @click="showAdvancedSearch = true">高级搜索</el-button>
             <div style="flex: 1"></div>
             <el-button type="primary" :icon="Plus" @click="handleCreateEnv">新建环境</el-button>
           </div>
@@ -204,13 +209,69 @@
         <el-button type="primary" @click="handleSubmitResource">确定</el-button>
       </template>
     </el-dialog>
+
+    <!-- 高级搜索对话框 -->
+    <el-dialog v-model="showAdvancedSearch" title="高级搜索" width="600px" destroy-on-close>
+      <el-form :model="advancedSearchForm" label-width="100px">
+        <el-form-item label="环境编码">
+          <el-input v-model="advancedSearchForm.env_code" placeholder="搜索环境编码" clearable />
+        </el-form-item>
+        <el-form-item label="环境名称">
+          <el-input v-model="advancedSearchForm.name" placeholder="搜索环境名称" clearable />
+        </el-form-item>
+        <el-form-item label="环境类型">
+          <el-select v-model="advancedSearchForm.env_type" placeholder="选择环境类型" clearable style="width: 100%">
+            <el-option label="开发环境" value="dev" />
+            <el-option label="测试环境" value="testing" />
+            <el-option label="预发布环境" value="staging" />
+            <el-option label="生产环境" value="production" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="状态">
+          <el-select v-model="advancedSearchForm.status" placeholder="选择状态" clearable style="width: 100%">
+            <el-option label="正常" value="active" />
+            <el-option label="停用" value="inactive" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="关键词">
+          <el-input v-model="advancedSearchForm.keyword" placeholder="搜索所有字段" clearable />
+        </el-form-item>
+        <el-form-item label="创建时间">
+          <el-date-picker
+            v-model="advancedSearchForm.created_at"
+            type="daterange"
+            range-separator="至"
+            start-placeholder="开始日期"
+            end-placeholder="结束日期"
+            value-format="YYYY-MM-DD"
+            style="width: 100%"
+          />
+        </el-form-item>
+        <el-form-item label="更新时间">
+          <el-date-picker
+            v-model="advancedSearchForm.updated_at"
+            type="daterange"
+            range-separator="至"
+            start-placeholder="开始日期"
+            end-placeholder="结束日期"
+            value-format="YYYY-MM-DD"
+            style="width: 100%"
+          />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="handleResetAdvancedSearch">重置</el-button>
+        <el-button @click="showAdvancedSearch = false">取消</el-button>
+        <el-button type="primary" @click="handleAdvancedSearch">搜索</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus, List, Edit, Delete } from '@element-plus/icons-vue'
+import { Plus, List, Edit, Delete, Search } from '@element-plus/icons-vue'
 import { environmentApi, resourceApi } from '@/api/environment'
 
 const activeTab = ref('list')
@@ -224,6 +285,17 @@ const resourceFormRef = ref()
 
 const searchForm = reactive({ keyword: '', env_type: '' })
 const resourceSearchForm = reactive({ environment_id: null, status: '' })
+
+const showAdvancedSearch = ref(false)
+const advancedSearchForm = reactive({
+  env_code: '',
+  name: '',
+  env_type: '',
+  status: '',
+  keyword: '',
+  created_at: null,
+  updated_at: null
+})
 
 const envForm = reactive({
   id: null,
@@ -273,8 +345,56 @@ function getResourceStatusText(status) {
 }
 
 async function loadEnvironments() {
-  const res = await environmentApi.getList(searchForm)
+  const params = { ...searchForm }
+  // 基本搜索：只搜索名称
+  if (searchForm.keyword) {
+    params.name = searchForm.keyword
+    delete params.keyword
+  }
+  const res = await environmentApi.getList(params)
   envList.value = res.data?.items || []
+}
+
+// 高级搜索
+function handleAdvancedSearch() {
+  const params = {}
+
+  // 添加高级搜索条件
+  if (advancedSearchForm.env_code) params.env_code = advancedSearchForm.env_code
+  if (advancedSearchForm.name) params.name = advancedSearchForm.name
+  if (advancedSearchForm.env_type) params.env_type = advancedSearchForm.env_type
+  if (advancedSearchForm.status) params.status = advancedSearchForm.status
+  if (advancedSearchForm.keyword) params.keyword = advancedSearchForm.keyword
+  if (advancedSearchForm.created_at && advancedSearchForm.created_at.length === 2) {
+    params.created_after = advancedSearchForm.created_at[0]
+    params.created_before = advancedSearchForm.created_at[1]
+  }
+  if (advancedSearchForm.updated_at && advancedSearchForm.updated_at.length === 2) {
+    params.updated_after = advancedSearchForm.updated_at[0]
+    params.updated_before = advancedSearchForm.updated_at[1]
+  }
+
+  // 同步到基本搜索的显示
+  searchForm.keyword = advancedSearchForm.name || advancedSearchForm.keyword || ''
+  searchForm.env_type = advancedSearchForm.env_type || ''
+
+  environmentApi.getList(params).then(res => {
+    envList.value = res.data?.items || []
+    showAdvancedSearch.value = false
+  })
+}
+
+// 重置高级搜索
+function handleResetAdvancedSearch() {
+  Object.assign(advancedSearchForm, {
+    env_code: '',
+    name: '',
+    env_type: '',
+    status: '',
+    keyword: '',
+    created_at: null,
+    updated_at: null
+  })
 }
 
 async function loadResources() {
