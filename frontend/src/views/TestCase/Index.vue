@@ -1,17 +1,17 @@
 <template>
-  <div class="test-case-page">
+  <div class="page-container">
     <div class="page-layout" ref="layoutRef">
-      <!-- 左侧目录树 -->
-      <div class="suite-sidebar" :style="{ width: sidebarWidth + 'px' }">
-        <div class="suite-header">
-          <span>目录</span>
+      <!-- Sidebar with Directory Tree -->
+      <div class="page-sidebar suite-sidebar" :style="{ width: sidebarWidth + 'px' }">
+        <div class="sidebar-header">
+          <span class="sidebar-title">{{ t('testCase.suite', '套件') }}</span>
           <el-dropdown trigger="click" @command="handleSuiteCommand">
             <el-button type="primary" link size="small">
               <el-icon><Plus /></el-icon>
             </el-button>
             <template #dropdown>
               <el-dropdown-menu>
-                <el-dropdown-item command="add">新建目录</el-dropdown-item>
+                <el-dropdown-item command="add">{{ t('testCase.newFolder') }}</el-dropdown-item>
               </el-dropdown-menu>
             </template>
           </el-dropdown>
@@ -24,6 +24,7 @@
           node-key="id"
           default-expand-all
           @node-click="handleNodeClick"
+          class="suite-tree"
         >
           <template #default="{ node, data }">
             <div class="tree-node">
@@ -36,9 +37,9 @@
                 <el-icon class="node-more" @click.stop><MoreFilled /></el-icon>
                 <template #dropdown>
                   <el-dropdown-menu>
-                    <el-dropdown-item command="addSub">添加子目录</el-dropdown-item>
-                    <el-dropdown-item command="edit">编辑</el-dropdown-item>
-                    <el-dropdown-item command="delete">删除</el-dropdown-item>
+                    <el-dropdown-item command="addSub">{{ t('testCase.addSubSuite', '添加子套件') }}</el-dropdown-item>
+                    <el-dropdown-item command="edit">{{ t('common.edit') }}</el-dropdown-item>
+                    <el-dropdown-item command="delete">{{ t('common.delete') }}</el-dropdown-item>
                   </el-dropdown-menu>
                 </template>
               </el-dropdown>
@@ -47,98 +48,103 @@
         </el-tree>
       </div>
 
-      <!-- 拖拽分隔条 -->
+      <!-- Resize Handle -->
       <div
         class="resize-handle"
         @mousedown="handleMouseDown"
       ></div>
 
-      <!-- 右侧内容区 -->
+      <!-- Content Area -->
       <div class="content-area">
         <el-card>
+          <!-- Toolbar -->
           <div class="toolbar">
-            <el-input
-              v-model="searchForm.keyword"
-              placeholder="搜索用例"
-              clearable
-              style="width: 200px"
-              @change="loadCases"
-            >
-              <template #prefix>
-                <el-icon><Search /></el-icon>
-              </template>
-            </el-input>
-            <el-select v-model="searchForm.priority" placeholder="优先级" clearable @change="loadCases">
-              <el-option label="紧急" value="critical" />
-              <el-option label="高" value="high" />
-              <el-option label="中" value="medium" />
-              <el-option label="低" value="low" />
-            </el-select>
-            <el-select v-model="searchForm.status" placeholder="状态" clearable @change="loadCases">
-              <el-option label="草稿" value="draft" />
-              <el-option label="激活" value="active" />
-              <el-option label="归档" value="archived" />
-            </el-select>
-            <el-button :icon="Search" @click="showAdvancedSearch = true">高级搜索</el-button>
-            <div style="flex: 1"></div>
-            <el-button type="primary" :icon="Plus" @click="handleCreateCase">新建用例</el-button>
-            <el-button
-              v-if="selectedCases.length > 0"
-              type="danger"
-              @click="handleBatchDelete"
-            >
-              批量删除 ({{ selectedCases.length }})
-            </el-button>
-            <el-button
-              v-if="selectedCases.length > 0"
-              @click="handleBatchMove"
-            >
-              批量移动
-            </el-button>
+            <div class="toolbar-left">
+              <el-input
+                v-model="searchForm.keyword"
+                :placeholder="t('testCase.searchPlaceholder', t('common.search'))"
+                clearable
+                class="search-input"
+                @change="loadCases"
+              >
+                <template #prefix>
+                  <el-icon><Search /></el-icon>
+                </template>
+              </el-input>
+              <el-select v-model="searchForm.priority" :placeholder="t('testCase.priority')" clearable @change="loadCases">
+                <el-option :label="t('testCase.critical')" value="critical" />
+                <el-option :label="t('testCase.high')" value="high" />
+                <el-option :label="t('testCase.medium')" value="medium" />
+                <el-option :label="t('testCase.low')" value="low" />
+              </el-select>
+              <el-select v-model="searchForm.status" :placeholder="t('testCase.status')" clearable @change="loadCases">
+                <el-option :label="t('testCase.draft')" value="draft" />
+                <el-option :label="t('testCase.active')" value="active" />
+                <el-option :label="t('testCase.archived')" value="archived" />
+              </el-select>
+              <el-button :icon="Search" @click="showAdvancedSearch = true">{{ t('common.advanced', '高级搜索') }}</el-button>
+            </div>
+            <div class="toolbar-right">
+              <el-button type="primary" :icon="Plus" @click="handleCreateCase">{{ t('testCase.newCase') }}</el-button>
+              <el-button
+                v-if="selectedCases.length > 0"
+                type="danger"
+                @click="handleBatchDelete"
+              >
+                {{ t('testCase.batchDelete') }} ({{ selectedCases.length }})
+              </el-button>
+              <el-button
+                v-if="selectedCases.length > 0"
+                @click="handleBatchMove"
+              >
+                {{ t('testCase.batchMove') }}
+              </el-button>
+            </div>
           </div>
 
+          <!-- Table -->
           <el-table
             :data="caseList"
             @selection-change="handleSelectionChange"
-            style="width: 100%"
+            class="case-table"
           >
             <el-table-column type="selection" width="55" />
-            <el-table-column label="编号" width="120">
+            <el-table-column :label="t('testCase.caseNo')" width="120">
               <template #default="{ row }">
                 {{ row.case_no || `CASE-${row.id}` }}
               </template>
             </el-table-column>
-            <el-table-column prop="name" label="用例名称" show-overflow-tooltip />
-            <el-table-column prop="priority" label="优先级" width="100">
+            <el-table-column prop="name" :label="t('testCase.caseName')" show-overflow-tooltip />
+            <el-table-column prop="priority" :label="t('testCase.priority')" width="100">
               <template #default="{ row }">
-                <el-tag :type="getPriorityType(row.priority)">{{ row.priority }}</el-tag>
+                <el-tag :type="getPriorityType(row.priority)">{{ getPriorityText(row.priority) }}</el-tag>
               </template>
             </el-table-column>
-            <el-table-column prop="case_type" label="类型" width="100">
+            <el-table-column prop="case_type" :label="t('testCase.type')" width="100">
               <template #default="{ row }">
-                <el-tag type="info">{{ row.case_type }}</el-tag>
+                <el-tag type="info">{{ getCaseTypeText(row.case_type) }}</el-tag>
               </template>
             </el-table-column>
-            <el-table-column prop="automation_status" label="自动化" width="100">
+            <el-table-column prop="automation_status" :label="t('testCase.automation')" width="110">
               <template #default="{ row }">
                 <el-tag :type="row.automation_status === 'automated' ? 'success' : 'info'">
-                  {{ row.automation_status }}
+                  {{ getAutomationText(row.automation_status) }}
                 </el-tag>
               </template>
             </el-table-column>
-            <el-table-column prop="status" label="状态" width="100">
+            <el-table-column prop="status" :label="t('testCase.status')" width="100">
               <template #default="{ row }">
-                <el-tag :type="getStatusType(row.status)">{{ row.status }}</el-tag>
+                <el-tag :type="getStatusType(row.status)">{{ getStatusText(row.status) }}</el-tag>
               </template>
             </el-table-column>
-            <el-table-column label="操作" width="200" fixed="right">
+            <el-table-column :label="t('common.operation')" width="200" fixed="right">
               <template #default="{ row }">
-                <el-tooltip content="查看" placement="top">
+                <el-tooltip :content="t('testCase.viewCase', '查看用例')" placement="top">
                   <el-button type="info" link size="small" @click="handleView(row)">
                     <el-icon><View /></el-icon>
                   </el-button>
                 </el-tooltip>
-                <el-tooltip content="执行" placement="top">
+                <el-tooltip :content="t('testCase.executeCase', '执行用例')" placement="top">
                   <el-button type="success" link size="small" @click="handleExecute(row)">
                     <el-icon><VideoPlay /></el-icon>
                   </el-button>
@@ -148,12 +154,12 @@
                     <el-icon><MagicStick /></el-icon>
                   </el-button>
                 </el-tooltip>
-                <el-tooltip content="编辑" placement="top">
+                <el-tooltip :content="t('testCase.editCase', t('common.edit') + '用例')" placement="top">
                   <el-button type="primary" link size="small" @click="handleEdit(row)">
                     <el-icon><Edit /></el-icon>
                   </el-button>
                 </el-tooltip>
-                <el-tooltip content="删除" placement="top">
+                <el-tooltip :content="t('common.delete')" placement="top">
                   <el-button type="danger" link size="small" @click="handleDelete(row)">
                     <el-icon><Delete /></el-icon>
                   </el-button>
@@ -162,21 +168,23 @@
             </el-table-column>
           </el-table>
 
-          <el-pagination
-            v-model:current-page="pagination.page"
-            v-model:page-size="pagination.pageSize"
-            :total="pagination.total"
-            :page-sizes="[10, 20, 50, 100]"
-            layout="total, sizes, prev, pager, next, jumper"
-            @current-change="loadCases"
-            @size-change="loadCases"
-            style="margin-top: 20px; justify-content: flex-end"
-          />
+          <!-- Pagination -->
+          <div class="table-pagination">
+            <el-pagination
+              v-model:current-page="pagination.page"
+              v-model:page-size="pagination.pageSize"
+              :total="pagination.total"
+              :page-sizes="[10, 20, 50, 100]"
+              layout="total, sizes, prev, pager, next, jumper"
+              @current-change="loadCases"
+              @size-change="loadCases"
+            />
+          </div>
         </el-card>
       </div>
     </div>
 
-    <!-- 用例表单对话框 -->
+    <!-- Case Form Dialog -->
     <el-dialog
       v-model="dialogVisible"
       :title="dialogTitle"
@@ -184,106 +192,106 @@
       destroy-on-close
     >
       <el-form :model="form" :rules="rules" ref="formRef" label-width="100px">
-        <el-form-item label="用例名称" prop="name">
-          <el-input v-model="form.name" placeholder="请输入用例名称" />
+        <el-form-item :label="t('testCase.caseName')" prop="name">
+          <el-input v-model="form.name" :placeholder="t('testCase.enterCaseName', '请输入用例名称')" />
         </el-form-item>
         <el-row :gutter="20">
           <el-col :span="8">
-            <el-form-item label="用例编号" prop="case_no">
-              <el-input v-model="form.case_no" placeholder="自动生成" />
+            <el-form-item :label="t('testCase.caseNo')" prop="case_no">
+              <el-input v-model="form.case_no" :placeholder="t('testCase.autoGenerated', '自动生成')" />
             </el-form-item>
           </el-col>
           <el-col :span="8">
-            <el-form-item label="所属目录" prop="suite_id">
+            <el-form-item :label="t('testCase.suite', '套件')" prop="suite_id">
               <el-tree-select
                 v-model="form.suite_id"
                 :data="suiteOptions"
                 :props="{ value: 'id', label: 'name', children: 'children' }"
                 check-strictly
                 clearable
-                placeholder="请选择目录"
+                :placeholder="t('testCase.selectSuite', '选择套件')"
                 style="width: 100%"
               />
             </el-form-item>
           </el-col>
           <el-col :span="8">
-            <el-form-item label="优先级" prop="priority">
+            <el-form-item :label="t('testCase.priority')" prop="priority">
               <el-select v-model="form.priority" style="width: 100%">
-                <el-option label="紧急" value="critical" />
-                <el-option label="高" value="high" />
-                <el-option label="中" value="medium" />
-                <el-option label="低" value="low" />
+                <el-option :label="t('testCase.critical')" value="critical" />
+                <el-option :label="t('testCase.high')" value="high" />
+                <el-option :label="t('testCase.medium')" value="medium" />
+                <el-option :label="t('testCase.low')" value="low" />
               </el-select>
             </el-form-item>
           </el-col>
         </el-row>
         <el-row :gutter="20">
           <el-col :span="8">
-            <el-form-item label="用例类型" prop="case_type">
+            <el-form-item :label="t('testCase.type')" prop="case_type">
               <el-select v-model="form.case_type" style="width: 100%">
-                <el-option label="功能测试" value="functional" />
-                <el-option label="性能测试" value="performance" />
-                <el-option label="安全测试" value="security" />
-                <el-option label="UI测试" value="ui" />
-                <el-option label="API测试" value="api" />
+                <el-option :label="t('testCase.functional')" value="functional" />
+                <el-option :label="t('testCase.performance')" value="performance" />
+                <el-option :label="t('testCase.security')" value="security" />
+                <el-option :label="t('testCase.ui')" value="ui" />
+                <el-option :label="t('testCase.api')" value="api" />
               </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="8">
-            <el-form-item label="自动化状态" prop="automation_status">
+            <el-form-item :label="t('testCase.automation')" prop="automation_status">
               <el-select v-model="form.automation_status" style="width: 100%">
-                <el-option label="手工" value="manual" />
-                <el-option label="自动化" value="automated" />
-                <el-option label="半自动化" value="semi-automated" />
+                <el-option :label="t('testCase.manual')" value="manual" />
+                <el-option :label="t('testCase.automated')" value="automated" />
+                <el-option :label="t('testCase.semiAutomated')" value="semi-automated" />
               </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="8">
-            <el-form-item label="状态" prop="status">
+            <el-form-item :label="t('testCase.status')" prop="status">
               <el-select v-model="form.status" style="width: 100%">
-                <el-option label="草稿" value="draft" />
-                <el-option label="激活" value="active" />
-                <el-option label="归档" value="archived" />
+                <el-option :label="t('testCase.draft')" value="draft" />
+                <el-option :label="t('testCase.active')" value="active" />
+                <el-option :label="t('testCase.archived')" value="archived" />
               </el-select>
             </el-form-item>
           </el-col>
         </el-row>
-        <el-form-item label="前置条件" prop="preconditions">
-          <el-input v-model="form.preconditions" type="textarea" :rows="2" placeholder="测试执行前需要满足的条件..." />
+        <el-form-item :label="t('testCase.preconditions')" prop="preconditions">
+          <el-input v-model="form.preconditions" type="textarea" :rows="2" :placeholder="t('testCase.preconditionsPlaceholder', '测试执行前的条件...')" />
         </el-form-item>
 
-        <!-- 测试步骤表格 -->
-        <el-form-item label="测试步骤" prop="stepList">
+        <!-- Test Steps Table -->
+        <el-form-item :label="t('testCase.testSteps')" prop="stepList">
           <div class="steps-table-wrapper">
             <el-table :data="form.stepList" border style="width: 100%">
-              <el-table-column label="序号" width="60" align="center">
+              <el-table-column label="#" width="60" align="center">
                 <template #default="{ $index }">
                   <span>{{ $index + 1 }}</span>
                 </template>
               </el-table-column>
-              <el-table-column label="步骤描述" min-width="200">
+              <el-table-column :label="t('testCase.stepDesc')" min-width="200">
                 <template #default="{ row }">
                   <el-input
                     v-model="row.step"
                     type="textarea"
                     :rows="2"
-                    placeholder="请输入步骤描述"
+                    :placeholder="t('testCase.enterStepDesc', '输入步骤描述')"
                     @blur="handleStepChange"
                   />
                 </template>
               </el-table-column>
-              <el-table-column label="期望结果" min-width="200">
+              <el-table-column :label="t('testCase.expected')" min-width="200">
                 <template #default="{ row }">
                   <el-input
                     v-model="row.expected"
                     type="textarea"
                     :rows="2"
-                    placeholder="请输入期望结果"
+                    :placeholder="t('testCase.enterExpected', '输入期望结果')"
                     @blur="handleStepChange"
                   />
                 </template>
               </el-table-column>
-              <el-table-column label="操作" width="80" align="center">
+              <el-table-column :label="t('common.operation')" width="80" align="center">
                 <template #default="{ $index }">
                   <el-button
                     type="danger"
@@ -292,7 +300,7 @@
                     @click="removeStep($index)"
                     :disabled="form.stepList.length <= 1"
                   >
-                    删除
+                    {{ t('testCase.removeStep') }}
                   </el-button>
                 </template>
               </el-table-column>
@@ -303,187 +311,187 @@
               @click="addStep"
               style="margin-top: 10px"
             >
-              添加步骤
+              {{ t('testCase.addStep') }}
             </el-button>
           </div>
         </el-form-item>
 
-        <el-form-item label="后置条件" prop="postconditions">
-          <el-input v-model="form.postconditions" type="textarea" :rows="2" placeholder="测试执行后的清理或恢复操作..." />
+        <el-form-item :label="t('testCase.postconditions')" prop="postconditions">
+          <el-input v-model="form.postconditions" type="textarea" :rows="2" :placeholder="t('testCase.postconditionsPlaceholder', '清理或恢复操作...')" />
         </el-form-item>
 
-        <el-form-item label="备注" prop="description">
-          <el-input v-model="form.description" type="textarea" :rows="3" placeholder="其他说明..." />
+        <el-form-item :label="t('testCase.remarks')" prop="description">
+          <el-input v-model="form.description" type="textarea" :rows="3" :placeholder="t('testCase.remarksPlaceholder', '额外备注...')" />
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="handleSubmit">确定</el-button>
+        <el-button @click="dialogVisible = false">{{ t('common.cancel') }}</el-button>
+        <el-button type="primary" @click="handleSubmit">{{ t('common.submit') }}</el-button>
       </template>
     </el-dialog>
 
-    <!-- 目录表单对话框 -->
+    <!-- Suite Form Dialog -->
     <el-dialog v-model="suiteDialogVisible" :title="suiteDialogTitle" width="500px">
       <el-form :model="suiteForm" :rules="suiteRules" ref="suiteFormRef" label-width="100px">
-        <el-form-item label="目录名称" prop="name">
-          <el-input v-model="suiteForm.name" placeholder="请输入目录名称" />
+        <el-form-item :label="t('testCase.folderName')" prop="name">
+          <el-input v-model="suiteForm.name" :placeholder="t('testCase.enterSuiteName', '输入套件名称')" />
         </el-form-item>
-        <el-form-item label="父目录" prop="parent_id">
+        <el-form-item :label="t('testCase.parentSuite', '父套件')" prop="parent_id">
           <el-tree-select
             v-model="suiteForm.parent_id"
             :data="suiteOptions"
             :props="{ value: 'id', label: 'name', children: 'children' }"
             check-strictly
             clearable
-            placeholder="请选择父目录"
+            :placeholder="t('testCase.selectParentSuite', '选择父套件')"
             style="width: 100%"
           />
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="suiteDialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="handleSuiteSubmit">确定</el-button>
+        <el-button @click="suiteDialogVisible = false">{{ t('common.cancel') }}</el-button>
+        <el-button type="primary" @click="handleSuiteSubmit">{{ t('common.submit') }}</el-button>
       </template>
     </el-dialog>
 
-    <!-- 查看用例对话框 -->
+    <!-- View Case Dialog -->
     <el-dialog
       v-model="viewDialogVisible"
-      title="查看用例"
+      :title="t('testCase.viewCase', '查看用例')"
       width="900px"
       destroy-on-close
     >
       <div v-if="viewCase" class="case-detail">
         <el-descriptions :column="2" border>
-          <el-descriptions-item label="用例编号">{{ viewCase.case_no || `CASE-${viewCase.id}` }}</el-descriptions-item>
-          <el-descriptions-item label="用例名称">{{ viewCase.name }}</el-descriptions-item>
-          <el-descriptions-item label="优先级">
-            <el-tag :type="getPriorityType(viewCase.priority)">{{ viewCase.priority }}</el-tag>
+          <el-descriptions-item :label="t('testCase.caseNo')">{{ viewCase.case_no || `CASE-${viewCase.id}` }}</el-descriptions-item>
+          <el-descriptions-item :label="t('testCase.caseName')">{{ viewCase.name }}</el-descriptions-item>
+          <el-descriptions-item :label="t('testCase.priority')">
+            <el-tag :type="getPriorityType(viewCase.priority)">{{ getPriorityText(viewCase.priority) }}</el-tag>
           </el-descriptions-item>
-          <el-descriptions-item label="用例类型">
-            <el-tag type="info">{{ viewCase.case_type }}</el-tag>
+          <el-descriptions-item :label="t('testCase.type')">
+            <el-tag type="info">{{ getCaseTypeText(viewCase.case_type) }}</el-tag>
           </el-descriptions-item>
-          <el-descriptions-item label="自动化状态">
+          <el-descriptions-item :label="t('testCase.automation')">
             <el-tag :type="viewCase.automation_status === 'automated' ? 'success' : 'info'">
-              {{ viewCase.automation_status }}
+              {{ getAutomationText(viewCase.automation_status) }}
             </el-tag>
           </el-descriptions-item>
-          <el-descriptions-item label="状态">
-            <el-tag :type="getStatusType(viewCase.status)">{{ viewCase.status }}</el-tag>
+          <el-descriptions-item :label="t('testCase.status')">
+            <el-tag :type="getStatusType(viewCase.status)">{{ getStatusText(viewCase.status) }}</el-tag>
           </el-descriptions-item>
-          <el-descriptions-item label="创建时间" :span="2">
+          <el-descriptions-item :label="t('common.createdAt')" :span="2">
             {{ viewCase.created_at ? new Date(viewCase.created_at).toLocaleString() : '-' }}
           </el-descriptions-item>
         </el-descriptions>
 
-        <el-divider content-position="left">前置条件</el-divider>
+        <el-divider content-position="left">{{ t('testCase.preconditions') }}</el-divider>
         <div class="detail-content">
-          {{ viewCase.preconditions || '无' }}
+          {{ viewCase.preconditions || t('common.none', '无') }}
         </div>
 
-        <el-divider content-position="left">测试步骤</el-divider>
+        <el-divider content-position="left">{{ t('testCase.testSteps') }}</el-divider>
         <el-table :data="getStepList(viewCase.steps)" border style="width: 100%">
-          <el-table-column label="序号" width="60" align="center">
+          <el-table-column label="#" width="60" align="center">
             <template #default="{ $index }">
               <span>{{ $index + 1 }}</span>
             </template>
           </el-table-column>
-          <el-table-column prop="step" label="步骤描述" />
-          <el-table-column prop="expected" label="期望结果" />
+          <el-table-column prop="step" :label="t('testCase.stepDesc')" />
+          <el-table-column prop="expected" :label="t('testCase.expectedResult', '期望结果')" />
         </el-table>
 
-        <el-divider content-position="left">后置条件</el-divider>
+        <el-divider content-position="left">{{ t('testCase.postconditions') }}</el-divider>
         <div class="detail-content">
-          {{ viewCase.postconditions || '无' }}
+          {{ viewCase.postconditions || t('common.none', '无') }}
         </div>
 
-        <el-divider content-position="left">备注</el-divider>
+        <el-divider content-position="left">{{ t('testCase.remarks') }}</el-divider>
         <div class="detail-content">
-          {{ viewCase.description || '无' }}
+          {{ viewCase.description || t('common.none', '无') }}
         </div>
       </div>
       <template #footer>
-        <el-button type="primary" @click="viewDialogVisible = false">关闭</el-button>
+        <el-button type="primary" @click="viewDialogVisible = false">{{ t('common.close', '关闭') }}</el-button>
       </template>
     </el-dialog>
 
-    <!-- 执行用例对话框 -->
+    <!-- Execute Case Dialog -->
     <el-dialog
       v-model="executeDialogVisible"
-      title="执行用例"
+      :title="t('testCase.executeCase', '执行用例')"
       width="900px"
       destroy-on-close
     >
       <div v-if="executeCase" class="case-execute">
         <el-descriptions :column="2" border>
-          <el-descriptions-item label="用例编号">{{ executeCase.case_no || `CASE-${executeCase.id}` }}</el-descriptions-item>
-          <el-descriptions-item label="用例名称">{{ executeCase.name }}</el-descriptions-item>
-          <el-descriptions-item label="优先级">
-            <el-tag :type="getPriorityType(executeCase.priority)">{{ executeCase.priority }}</el-tag>
+          <el-descriptions-item :label="t('testCase.caseNo')">{{ executeCase.case_no || `CASE-${executeCase.id}` }}</el-descriptions-item>
+          <el-descriptions-item :label="t('testCase.caseName')">{{ executeCase.name }}</el-descriptions-item>
+          <el-descriptions-item :label="t('testCase.priority')">
+            <el-tag :type="getPriorityType(executeCase.priority)">{{ getPriorityText(executeCase.priority) }}</el-tag>
           </el-descriptions-item>
         </el-descriptions>
 
-        <el-divider content-position="left">前置条件</el-divider>
+        <el-divider content-position="left">{{ t('testCase.preconditions') }}</el-divider>
         <div class="detail-content">
-          {{ executeCase.preconditions || '无' }}
+          {{ executeCase.preconditions || t('common.none', '无') }}
         </div>
 
-        <el-divider content-position="left">测试步骤</el-divider>
+        <el-divider content-position="left">{{ t('testCase.testSteps') }}</el-divider>
         <el-table :data="getStepList(executeCase.steps)" border style="width: 100%">
-          <el-table-column label="序号" width="60" align="center">
+          <el-table-column label="#" width="60" align="center">
             <template #default="{ $index }">
               <span>{{ $index + 1 }}</span>
             </template>
           </el-table-column>
-          <el-table-column prop="step" label="步骤描述" />
-          <el-table-column prop="expected" label="期望结果" />
+          <el-table-column prop="step" :label="t('testCase.stepDesc')" />
+          <el-table-column prop="expected" :label="t('testCase.expectedResult', '期望结果')" />
         </el-table>
 
-        <el-divider content-position="left">执行结果</el-divider>
+        <el-divider content-position="left">{{ t('testCase.executionResult', '执行结果') }}</el-divider>
         <el-form :model="executeForm" label-width="100px">
-          <el-form-item label="执行状态" prop="status" required>
+          <el-form-item :label="t('testCase.status')" prop="status" required>
             <el-radio-group v-model="executeForm.status">
-              <el-radio label="passed">通过</el-radio>
-              <el-radio label="failed">失败</el-radio>
-              <el-radio label="blocked">阻塞</el-radio>
-              <el-radio label="skipped">跳过</el-radio>
+              <el-radio label="passed">{{ t('testCase.passed', '通过') }}</el-radio>
+              <el-radio label="failed">{{ t('testCase.failed', '失败') }}</el-radio>
+              <el-radio label="blocked">{{ t('testCase.blocked', '阻塞') }}</el-radio>
+              <el-radio label="skipped">{{ t('testCase.skipped', '跳过') }}</el-radio>
             </el-radio-group>
           </el-form-item>
 
-          <el-form-item label="实际结果">
+          <el-form-item :label="t('testCase.actualResult', '实际结果')">
             <el-input
               v-model="executeForm.actual_result"
               type="textarea"
               :rows="4"
-              placeholder="请输入实际执行结果..."
+              :placeholder="t('testCase.enterActualResult', '输入实际执行结果...')"
             />
           </el-form-item>
 
-          <el-form-item label="备注">
+          <el-form-item :label="t('testCase.remarks')">
             <el-input
               v-model="executeForm.notes"
               type="textarea"
               :rows="3"
-              placeholder="其他备注信息..."
+              :placeholder="t('testCase.executionNotesPlaceholder', '额外备注...')"
             />
           </el-form-item>
 
-          <el-form-item label="执行时长(秒)">
+          <el-form-item :label="t('testCase.duration', '时长(秒)')">
             <el-input-number
               v-model="executeForm.duration"
               :min="0"
               :max="99999"
-              placeholder="执行时长"
+              :placeholder="t('testCase.executionDuration', '执行时长')"
             />
           </el-form-item>
 
-          <el-form-item label="关联缺陷">
+          <el-form-item :label="t('testCase.relatedDefects', '关联缺陷')">
             <div style="display: flex; gap: 8px; width: 100%">
               <el-select
                 v-model="executeForm.defect_ids"
                 multiple
                 filterable
-                placeholder="选择已有缺陷"
+                :placeholder="t('testCase.selectDefects', '选择现有缺陷')"
                 style="flex: 1"
               >
                 <el-option
@@ -493,22 +501,22 @@
                   :value="defect.id"
                 />
               </el-select>
-              <el-button type="primary" @click="handleCreateDefect">创建缺陷</el-button>
+              <el-button type="primary" @click="handleCreateDefect">{{ t('testCase.createDefect', '创建缺陷') }}</el-button>
             </div>
           </el-form-item>
         </el-form>
       </div>
       <template #footer>
-        <el-button @click="executeDialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="executing" @click="handleSubmitExecution">提交执行结果</el-button>
+        <el-button @click="executeDialogVisible = false">{{ t('common.cancel') }}</el-button>
+        <el-button type="primary" :loading="executing" @click="handleSubmitExecution">{{ t('testCase.submitResult', '提交结果') }}</el-button>
       </template>
     </el-dialog>
 
-    <!-- 选择执行环境对话框 -->
-    <el-dialog v-model="envDialogVisible" title="选择执行环境" width="500px" destroy-on-close>
+    <!-- Environment Selection Dialog -->
+    <el-dialog v-model="envDialogVisible" :title="t('testCase.selectEnvironment', '选择执行环境')" width="500px" destroy-on-close>
       <el-form label-width="100px">
-        <el-form-item label="执行环境" required>
-          <el-select v-model="selectedEnvironmentId" placeholder="请选择执行环境" style="width: 100%">
+        <el-form-item :label="t('testCase.environment', '环境')" required>
+          <el-select v-model="selectedEnvironmentId" :placeholder="t('testCase.selectEnvironment', '选择环境')" style="width: 100%">
             <el-option
               v-for="env in environmentList"
               :key="env.id"
@@ -519,105 +527,105 @@
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="envDialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="handleConfirmAIExecute">确定</el-button>
+        <el-button @click="envDialogVisible = false">{{ t('common.cancel') }}</el-button>
+        <el-button type="primary" @click="handleConfirmAIExecute">{{ t('common.confirm') }}</el-button>
       </template>
     </el-dialog>
 
-    <!-- 高级搜索对话框 -->
-    <el-dialog v-model="showAdvancedSearch" title="高级搜索" width="700px" destroy-on-close>
+    <!-- Advanced Search Dialog -->
+    <el-dialog v-model="showAdvancedSearch" :title="t('common.advanced', '高级搜索')" width="700px" destroy-on-close>
       <el-form :model="advancedSearchForm" label-width="100px">
         <el-row :gutter="20">
           <el-col :span="12">
-            <el-form-item label="用例编号">
-              <el-input v-model="advancedSearchForm.case_no" placeholder="如: CASE-0001" clearable />
+            <el-form-item :label="t('testCase.caseNo')">
+              <el-input v-model="advancedSearchForm.case_no" :placeholder="t('testCase.caseNoPlaceholder', '例如：CASE-0001')" clearable />
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="用例名称">
-              <el-input v-model="advancedSearchForm.name" placeholder="输入用例名称" clearable />
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-row :gutter="20">
-          <el-col :span="12">
-            <el-form-item label="优先级">
-              <el-select v-model="advancedSearchForm.priority" placeholder="选择优先级" clearable style="width: 100%">
-                <el-option label="紧急" value="critical" />
-                <el-option label="高" value="high" />
-                <el-option label="中" value="medium" />
-                <el-option label="低" value="low" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="状态">
-              <el-select v-model="advancedSearchForm.status" placeholder="选择状态" clearable style="width: 100%">
-                <el-option label="草稿" value="draft" />
-                <el-option label="激活" value="active" />
-                <el-option label="归档" value="archived" />
-              </el-select>
+            <el-form-item :label="t('testCase.caseName')">
+              <el-input v-model="advancedSearchForm.name" :placeholder="t('testCase.enterCaseName', '输入用例名称')" clearable />
             </el-form-item>
           </el-col>
         </el-row>
         <el-row :gutter="20">
           <el-col :span="12">
-            <el-form-item label="用例类型">
-              <el-select v-model="advancedSearchForm.case_type" placeholder="选择类型" clearable style="width: 100%">
-                <el-option label="功能测试" value="functional" />
-                <el-option label="性能测试" value="performance" />
-                <el-option label="安全测试" value="security" />
-                <el-option label="UI测试" value="ui" />
-                <el-option label="API测试" value="api" />
+            <el-form-item :label="t('testCase.priority')">
+              <el-select v-model="advancedSearchForm.priority" :placeholder="t('testCase.selectPriority', '选择优先级')" clearable style="width: 100%">
+                <el-option :label="t('testCase.critical')" value="critical" />
+                <el-option :label="t('testCase.high')" value="high" />
+                <el-option :label="t('testCase.medium')" value="medium" />
+                <el-option :label="t('testCase.low')" value="low" />
               </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="自动化状态">
-              <el-select v-model="advancedSearchForm.automation_status" placeholder="选择状态" clearable style="width: 100%">
-                <el-option label="手工" value="manual" />
-                <el-option label="自动化" value="automated" />
-                <el-option label="半自动化" value="semi-automated" />
+            <el-form-item :label="t('testCase.status')">
+              <el-select v-model="advancedSearchForm.status" :placeholder="t('testCase.selectStatus', '选择状态')" clearable style="width: 100%">
+                <el-option :label="t('testCase.draft')" value="draft" />
+                <el-option :label="t('testCase.active')" value="active" />
+                <el-option :label="t('testCase.archived')" value="archived" />
               </el-select>
             </el-form-item>
           </el-col>
         </el-row>
         <el-row :gutter="20">
           <el-col :span="12">
-            <el-form-item label="创建时间">
+            <el-form-item :label="t('testCase.type')">
+              <el-select v-model="advancedSearchForm.case_type" :placeholder="t('testCase.selectType', '选择类型')" clearable style="width: 100%">
+                <el-option :label="t('testCase.functional')" value="functional" />
+                <el-option :label="t('testCase.performance')" value="performance" />
+                <el-option :label="t('testCase.security')" value="security" />
+                <el-option :label="t('testCase.ui')" value="ui" />
+                <el-option :label="t('testCase.api')" value="api" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item :label="t('testCase.automation')">
+              <el-select v-model="advancedSearchForm.automation_status" :placeholder="t('testCase.selectStatus', '选择状态')" clearable style="width: 100%">
+                <el-option :label="t('testCase.manual')" value="manual" />
+                <el-option :label="t('testCase.automated')" value="automated" />
+                <el-option :label="t('testCase.semiAutomated')" value="semi-automated" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-row :gutter="20">
+          <el-col :span="12">
+            <el-form-item :label="t('common.createdAt')">
               <el-date-picker
                 v-model="advancedSearchForm.created_at"
                 type="daterange"
-                range-separator="至"
-                start-placeholder="开始日期"
-                end-placeholder="结束日期"
+                range-separator="to"
+                :start-placeholder="t('testCase.startDate', '开始日期')"
+                :end-placeholder="t('testCase.endDate', '结束日期')"
                 value-format="YYYY-MM-DD"
                 style="width: 100%"
               />
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="更新时间">
+            <el-form-item :label="t('common.updatedAt')">
               <el-date-picker
                 v-model="advancedSearchForm.updated_at"
                 type="daterange"
-                range-separator="至"
-                start-placeholder="开始日期"
-                end-placeholder="结束日期"
+                range-separator="to"
+                :start-placeholder="t('testCase.startDate', '开始日期')"
+                :end-placeholder="t('testCase.endDate', '结束日期')"
                 value-format="YYYY-MM-DD"
                 style="width: 100%"
               />
             </el-form-item>
           </el-col>
         </el-row>
-        <el-form-item label="关键词">
-          <el-input v-model="advancedSearchForm.keyword" placeholder="搜索用例名称、编号、步骤、期望结果" clearable />
+        <el-form-item :label="t('testCase.keyword', '关键词')">
+          <el-input v-model="advancedSearchForm.keyword" :placeholder="t('testCase.keywordPlaceholder', '搜索名称、编号、步骤、期望结果...')" clearable />
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="handleResetAdvancedSearch">重置</el-button>
-        <el-button @click="showAdvancedSearch = false">取消</el-button>
-        <el-button type="primary" @click="handleAdvancedSearch">搜索</el-button>
+        <el-button @click="handleResetAdvancedSearch">{{ t('common.reset') }}</el-button>
+        <el-button @click="showAdvancedSearch = false">{{ t('common.cancel') }}</el-button>
+        <el-button type="primary" @click="handleAdvancedSearch">{{ t('common.search') }}</el-button>
       </template>
     </el-dialog>
   </div>
@@ -634,8 +642,10 @@ import { useTestCaseStore } from '@/store/test-case'
 import { useProjectStore } from '@/store/project'
 import { defectApi } from '@/api/defect'
 import { environmentApi } from '@/api/environment'
+import { useI18n } from '@/i18n'
 
 const router = useRouter()
+const { t } = useI18n()
 
 const testCaseStore = useTestCaseStore()
 const projectStore = useProjectStore()
@@ -644,24 +654,24 @@ const formRef = ref()
 const suiteFormRef = ref()
 const layoutRef = ref()
 
-// 侧边栏宽度相关
+// Sidebar width related
 const sidebarWidth = ref(250)
 const minWidth = 180
 const maxWidth = 500
 const isResizing = ref(false)
 
-// 从 localStorage 恢复宽度
+// Restore width from localStorage
 const savedWidth = localStorage.getItem('test-case-sidebar-width')
 if (savedWidth) {
   sidebarWidth.value = parseInt(savedWidth)
 }
 
-// 监听宽度变化并保存
+// Watch width changes and save
 watch(sidebarWidth, (newWidth) => {
   localStorage.setItem('test-case-sidebar-width', newWidth.toString())
 })
 
-// 鼠标按下开始拖拽
+// Mouse down start dragging
 function handleMouseDown(e) {
   isResizing.value = true
   document.addEventListener('mousemove', handleMouseMove)
@@ -670,20 +680,20 @@ function handleMouseDown(e) {
   document.body.style.userSelect = 'none'
 }
 
-// 鼠标移动
+// Mouse move
 function handleMouseMove(e) {
   if (!isResizing.value || !layoutRef.value) return
 
   const rect = layoutRef.value.getBoundingClientRect()
   const newWidth = e.clientX - rect.left
 
-  // 限制宽度范围
+  // Limit width range
   if (newWidth >= minWidth && newWidth <= maxWidth) {
     sidebarWidth.value = newWidth
   }
 }
 
-// 鼠标释放
+// Mouse up
 function handleMouseUp() {
   isResizing.value = false
   document.removeEventListener('mousemove', handleMouseMove)
@@ -692,7 +702,7 @@ function handleMouseUp() {
   document.body.style.userSelect = ''
 }
 
-// 当前项目ID
+// Current project ID
 const currentProjectId = computed(() => projectStore.currentProject?.id)
 
 const suiteTree = ref([])
@@ -705,7 +715,7 @@ const dialogVisible = ref(false)
 const dialogTitle = ref('')
 const isEdit = ref(false)
 
-// 目录相关
+// Suite related
 const suiteDialogVisible = ref(false)
 const suiteDialogTitle = ref('')
 const isSuiteEdit = ref(false)
@@ -716,7 +726,7 @@ const suiteForm = reactive({
 })
 
 const suiteRules = {
-  name: [{ required: true, message: '请输入目录名称', trigger: 'blur' }]
+  name: [{ required: true, message: 'Suite name is required', trigger: 'blur' }]
 }
 
 const treeProps = {
@@ -726,7 +736,7 @@ const treeProps = {
 }
 
 const currentSuiteName = computed(() => {
-  if (currentSuiteId.value === null) return '全部测试用例'
+  if (currentSuiteId.value === null) return 'All Test Cases'
   const findName = (tree, id) => {
     for (const item of tree) {
       if (item.id === id) return item.name
@@ -737,10 +747,10 @@ const currentSuiteName = computed(() => {
     }
     return ''
   }
-  return findName(suiteTree.value, currentSuiteId.value) || '当前目录'
+  return findName(suiteTree.value, currentSuiteId.value) || 'Current Suite'
 })
 
-// 查看和执行相关
+// View and Execute related
 const viewDialogVisible = ref(false)
 const viewCase = ref(null)
 const executeDialogVisible = ref(false)
@@ -755,16 +765,16 @@ const executeForm = reactive({
   defect_ids: []
 })
 
-// 缺陷列表
+// Defect list
 const defectList = ref([])
 
-// 环境选择相关
+// Environment selection related
 const envDialogVisible = ref(false)
 const environmentList = ref([])
 const selectedEnvironmentId = ref(null)
 const pendingAIExecuteCase = ref(null)
 
-// 高级搜索
+// Advanced search
 const showAdvancedSearch = ref(false)
 const advancedSearchForm = reactive({
   case_no: '',
@@ -808,7 +818,7 @@ const form = reactive({
 })
 
 const rules = {
-  name: [{ required: true, message: '请输入用例名称', trigger: 'blur' }]
+  name: [{ required: true, message: t('testCase.caseName') + ' ' + t('common.required', '为必填项'), trigger: 'blur' }]
 }
 
 function getPriorityType(priority) {
@@ -816,9 +826,48 @@ function getPriorityType(priority) {
   return map[priority] || 'info'
 }
 
+function getPriorityText(priority) {
+  const map = {
+    critical: t('testCase.critical'),
+    high: t('testCase.high'),
+    medium: t('testCase.medium'),
+    low: t('testCase.low')
+  }
+  return map[priority] || priority
+}
+
 function getStatusType(status) {
   const map = { draft: 'info', active: 'success', archived: 'warning' }
   return map[status] || 'info'
+}
+
+function getStatusText(status) {
+  const map = {
+    draft: t('testCase.draft'),
+    active: t('testCase.active'),
+    archived: t('testCase.archived')
+  }
+  return map[status] || status
+}
+
+function getCaseTypeText(type) {
+  const map = {
+    functional: t('testCase.functional'),
+    performance: t('testCase.performance'),
+    security: t('testCase.security'),
+    ui: t('testCase.ui'),
+    api: t('testCase.api')
+  }
+  return map[type] || type
+}
+
+function getAutomationText(status) {
+  const map = {
+    manual: t('testCase.manual'),
+    automated: t('testCase.automated'),
+    'semi-automated': t('testCase.semiAutomated')
+  }
+  return map[status] || status
 }
 
 async function loadSuites() {
@@ -848,7 +897,7 @@ function handleNodeClick(data) {
   loadCases()
 }
 
-// 目录操作命令
+// Suite operation commands
 function handleSuiteCommand(command) {
   if (command === 'add') {
     handleAddSuite()
@@ -865,10 +914,10 @@ function handleSuiteAction(command, data) {
   }
 }
 
-// 添加目录
+// Add suite
 function handleAddSuite(parentId = null) {
   isSuiteEdit.value = false
-  suiteDialogTitle.value = parentId ? '新建子目录' : '新建目录'
+  suiteDialogTitle.value = parentId ? t('testCase.addSubSuite', '添加子套件') : t('testCase.newFolder')
   Object.assign(suiteForm, {
     id: null,
     name: '',
@@ -877,10 +926,10 @@ function handleAddSuite(parentId = null) {
   suiteDialogVisible.value = true
 }
 
-// 编辑目录
+// Edit suite
 function handleEditSuite(data) {
   isSuiteEdit.value = true
-  suiteDialogTitle.value = '编辑目录'
+  suiteDialogTitle.value = t('testCase.editSuite', '编辑套件')
   Object.assign(suiteForm, {
     id: data.id,
     name: data.name,
@@ -889,13 +938,13 @@ function handleEditSuite(data) {
   suiteDialogVisible.value = true
 }
 
-// 删除目录
+// Delete suite
 function handleDeleteSuite(data) {
-  ElMessageBox.confirm('确定要删除这个目录吗？删除后目录下的测试用例将变为无目录状态。', '提示', {
+  ElMessageBox.confirm(t('testCase.deleteSuiteConfirm', '确定要删除这个套件吗？测试用例将变成无套件状态。'), t('common.confirm'), {
     type: 'warning'
   }).then(() => {
     testCaseStore.deleteSuite(data.id).then(() => {
-      ElMessage.success('删除成功')
+      ElMessage.success(t('testCase.deleteSuccess'))
       loadSuites()
       if (currentSuiteId.value === data.id) {
         currentSuiteId.value = null
@@ -905,7 +954,7 @@ function handleDeleteSuite(data) {
   })
 }
 
-// 提交目录表单
+// Submit suite form
 function handleSuiteSubmit() {
   suiteFormRef.value.validate((valid) => {
     if (valid) {
@@ -916,7 +965,7 @@ function handleSuiteSubmit() {
       const api = isSuiteEdit.value ? testCaseStore.updateSuite : testCaseStore.createSuite
       const params = isSuiteEdit.value ? suiteForm.id : data
       api(params, isSuiteEdit.value ? data : null).then(() => {
-        ElMessage.success(isSuiteEdit.value ? '更新成功' : '创建成功')
+        ElMessage.success(isSuiteEdit.value ? t('testCase.updateSuccess') : t('testCase.createSuccess'))
         suiteDialogVisible.value = false
         loadSuites()
       })
@@ -932,11 +981,11 @@ async function loadCases() {
     project_id: currentProjectId.value
   }
 
-  // 基本搜索：只搜索名称
+  // Basic search: only search name
   if (searchForm.keyword) {
     params.name = searchForm.keyword
   }
-  // 优先级和状态筛选
+  // Priority and status filter
   if (searchForm.priority) {
     params.priority = searchForm.priority
   }
@@ -949,9 +998,9 @@ async function loadCases() {
   pagination.total = res.data?.total || 0
 }
 
-// 高级搜索处理
+// Advanced search handler
 function handleAdvancedSearch() {
-  // 构建搜索参数
+  // Build search params
   const params = {
     page: 1,
     per_page: pagination.pageSize,
@@ -959,7 +1008,7 @@ function handleAdvancedSearch() {
     project_id: currentProjectId.value
   }
 
-  // 添加高级搜索条件
+  // Add advanced search conditions
   if (advancedSearchForm.case_no) {
     params.case_no = advancedSearchForm.case_no
   }
@@ -990,7 +1039,7 @@ function handleAdvancedSearch() {
     params.updated_before = advancedSearchForm.updated_at[1]
   }
 
-  // 同步到基本搜索的显示
+  // Sync to basic search display
   searchForm.keyword = advancedSearchForm.name || advancedSearchForm.keyword || ''
   searchForm.priority = advancedSearchForm.priority || ''
   searchForm.status = advancedSearchForm.status || ''
@@ -1003,7 +1052,7 @@ function handleAdvancedSearch() {
   })
 }
 
-// 重置高级搜索
+// Reset advanced search
 function handleResetAdvancedSearch() {
   Object.assign(advancedSearchForm, {
     case_no: '',
@@ -1029,7 +1078,7 @@ function handleSelectionChange(selection) {
 
 function handleCreateCase() {
   isEdit.value = false
-  dialogTitle.value = '新建测试用例'
+  dialogTitle.value = t('testCase.newCase')
   Object.assign(form, {
     id: null,
     name: '',
@@ -1051,9 +1100,9 @@ function handleCreateCase() {
 
 function handleEdit(row) {
   isEdit.value = true
-  dialogTitle.value = '编辑测试用例'
+  dialogTitle.value = t('testCase.editCase', t('common.edit') + ' ' + t('testCase.title'))
 
-  // 解析steps数据
+  // Parse steps data
   let stepList = [{ step: '', expected: '' }]
   if (row.steps) {
     try {
@@ -1089,34 +1138,34 @@ function handleEdit(row) {
 }
 
 function handleDelete(row) {
-  ElMessageBox.confirm('确定要删除这条用例吗？', '提示', {
+  ElMessageBox.confirm(t('testCase.deleteConfirm'), t('common.confirm'), {
     type: 'warning'
   }).then(() => {
     testCaseStore.deleteCase(row.id).then(() => {
-      ElMessage.success('删除成功')
+      ElMessage.success(t('testCase.deleteSuccess'))
       loadCases()
     })
   })
 }
 
 function handleBatchDelete() {
-  ElMessageBox.confirm(`确定要删除选中的 ${selectedCases.value.length} 条用例吗？`, '提示', {
+  ElMessageBox.confirm(t('testCase.batchDeleteConfirm', `确定要删除选中的 ${selectedCases.value.length} 条用例吗？`), t('common.confirm'), {
     type: 'warning'
   }).then(() => {
     testCaseStore.batchDeleteCases(selectedCases.value).then(() => {
-      ElMessage.success('删除成功')
+      ElMessage.success(t('testCase.deleteSuccess'))
       loadCases()
     })
   })
 }
 
 function handleBatchMove() {
-  ElMessageBox.prompt('请输入目标文件夹ID', '批量移动', {
-    confirmButtonText: '确定',
-    cancelButtonText: '取消'
+  ElMessageBox.prompt(t('testCase.targetSuitePrompt', '输入目标套件ID'), t('testCase.batchMove'), {
+    confirmButtonText: t('common.confirm'),
+    cancelButtonText: t('common.cancel')
   }).then(({ value }) => {
     testCaseStore.batchMoveCases(selectedCases.value, parseInt(value)).then(() => {
-      ElMessage.success('移动成功')
+      ElMessage.success(t('testCase.moveSuccess'))
       loadCases()
     })
   })
@@ -1133,17 +1182,17 @@ function removeStep(index) {
 }
 
 function handleStepChange() {
-  // 将步骤列表转换为JSON格式
+  // Convert step list to JSON format
   const validSteps = form.stepList.filter(s => s.step || s.expected)
   form.steps = JSON.stringify(validSteps)
-  // 兼容旧字段
+  // Compatible with old field
   form.expected_result = validSteps.map(s => s.expected).filter(Boolean).join('\n')
 }
 
 function handleSubmit() {
   formRef.value.validate((valid) => {
     if (valid) {
-      // 提交前处理步骤数据
+      // Process step data before submit
       handleStepChange()
 
       const submitData = { ...form }
@@ -1152,7 +1201,7 @@ function handleSubmit() {
       const api = isEdit.value ? testCaseStore.updateCase : testCaseStore.createCase
       const params = isEdit.value ? form.id : submitData
       api(params, isEdit.value ? submitData : null).then(() => {
-        ElMessage.success(isEdit.value ? '更新成功' : '创建成功')
+        ElMessage.success(isEdit.value ? t('testCase.updateSuccess') : t('testCase.createSuccess'))
         dialogVisible.value = false
         loadCases()
         loadSuites()
@@ -1161,52 +1210,52 @@ function handleSubmit() {
   })
 }
 
-// 解析步骤列表
+// Parse step list
 function getStepList(steps) {
-  if (!steps) return [{ step: '无', expected: '无' }]
+  if (!steps) return [{ step: 'None', expected: 'None' }]
 
-  // 尝试解析 JSON
+  // Try to parse JSON
   try {
     let parsed = steps
-    // 如果是字符串，尝试解析
+    // If string, try to parse
     if (typeof steps === 'string') {
-      // 尝试直接解析
+      // Try direct parse
       try {
         parsed = JSON.parse(steps)
       } catch {
-        // 如果失败，尝试去除转义字符后再解析
+        // If fails, try to remove escape chars then parse
         try {
-          // 处理被双重转义的情况
+          // Handle double-escaped case
           const unescaped = steps.replace(/\\"/g, '"').replace(/\\\\/g, '\\')
           parsed = JSON.parse(unescaped)
         } catch {
-          // 仍然失败，返回提示
-          return [{ step: '步骤格式错误', expected: '请检查数据格式' }]
+          // Still fails, return prompt
+          return [{ step: 'Step format error', expected: 'Please check data format' }]
         }
       }
     }
 
-    // 确保是数组
+    // Ensure it's an array
     if (Array.isArray(parsed)) {
-      return parsed.length > 0 ? parsed : [{ step: '无', expected: '无' }]
+      return parsed.length > 0 ? parsed : [{ step: 'None', expected: 'None' }]
     }
   } catch (e) {
-    console.error('解析步骤失败:', e, steps)
+    console.error('Parse steps failed:', e, steps)
   }
 
-  return [{ step: '无', expected: '无' }]
+  return [{ step: 'None', expected: 'None' }]
 }
 
-// 查看用例
+// View case
 function handleView(row) {
   viewCase.value = row
   viewDialogVisible.value = true
 }
 
-// 执行用例
+// Execute case
 function handleExecute(row) {
   executeCase.value = row
-  // 重置执行表单
+  // Reset execution form
   Object.assign(executeForm, {
     status: 'passed',
     actual_result: '',
@@ -1214,13 +1263,12 @@ function handleExecute(row) {
     duration: 0,
     defect_ids: []
   })
-  // 加载缺陷列表
+  // Load defect list
   loadDefects()
   executeDialogVisible.value = true
 }
 
-// AI执行用例
-// AI执行单个用例
+// AI execute case
 function handleAIExecute(row) {
   pendingAIExecuteCase.value = row
   selectedEnvironmentId.value = null
@@ -1228,7 +1276,7 @@ function handleAIExecute(row) {
   loadEnvironments()
 }
 
-// 加载环境列表
+// Load environment list
 async function loadEnvironments() {
   try {
     const res = await environmentApi.getList({
@@ -1236,14 +1284,14 @@ async function loadEnvironments() {
     })
     environmentList.value = res.data?.items || []
   } catch (error) {
-    console.error('加载环境列表失败:', error)
+    console.error('Failed to load environments:', error)
   }
 }
 
-// 确认AI执行
+// Confirm AI execute
 function handleConfirmAIExecute() {
   if (!selectedEnvironmentId.value) {
-    ElMessage.warning('请选择执行环境')
+    ElMessage.warning(t('testCase.selectEnvironment', '请选择执行环境'))
     return
   }
 
@@ -1258,7 +1306,7 @@ function handleConfirmAIExecute() {
   })
 }
 
-// 加载缺陷列表
+// Load defect list
 async function loadDefects() {
   try {
     const res = await defectApi.getList({
@@ -1267,11 +1315,11 @@ async function loadDefects() {
     })
     defectList.value = res.data?.items || []
   } catch (error) {
-    console.error('加载缺陷列表失败:', error)
+    console.error('Failed to load defects:', error)
   }
 }
 
-// 创建缺陷
+// Create defect
 function handleCreateDefect() {
   router.push({
     path: '/defects',
@@ -1283,16 +1331,16 @@ function handleCreateDefect() {
   })
 }
 
-// 提交执行结果
+// Submit execution result
 async function handleSubmitExecution() {
   if (!executeForm.status) {
-    ElMessage.warning('请选择执行状态')
+    ElMessage.warning(t('testCase.selectExecutionStatus', '请选择执行状态'))
     return
   }
 
   executing.value = true
   try {
-    // 调用执行API创建执行记录
+    // Call execution API to create execution record
     const { testExecutionApi } = await import('@/api/test-plan')
 
     await testExecutionApi.create({
@@ -1302,17 +1350,17 @@ async function handleSubmitExecution() {
       notes: executeForm.notes,
       duration: executeForm.duration,
       defect_ids: executeForm.defect_ids,
-      executed_by: 'current_user' // TODO: 从登录用户信息获取
+      executed_by: 'current_user' // TODO: Get from logged in user
     })
 
-    ElMessage.success('执行结果提交成功')
+    ElMessage.success(t('testCase.executionSubmitted', '执行结果提交成功'))
     executeDialogVisible.value = false
 
-    // 刷新用例列表（可能显示最新执行状态）
+    // Refresh case list (may show latest execution status)
     loadCases()
   } catch (error) {
-    console.error('提交执行结果失败:', error)
-    ElMessage.error('提交失败: ' + (error.response?.data?.message || error.message))
+    console.error('Failed to submit execution result:', error)
+    ElMessage.error(t('testCase.submitFailed', '提交失败：') + (error.response?.data?.message || error.message))
   } finally {
     executing.value = false
   }
@@ -1325,7 +1373,7 @@ onMounted(() => {
   }
 })
 
-// 监听项目变化，重新加载数据
+// Watch project changes, reload data
 watch(currentProjectId, (newVal, oldVal) => {
   if (newVal && newVal !== oldVal) {
     currentSuiteId.value = null
@@ -1337,162 +1385,39 @@ watch(currentProjectId, (newVal, oldVal) => {
 </script>
 
 <style scoped>
-.test-case-page {
-  height: 100%;
+/* Page-specific styles only - general layout styles are in page-layout.css */
+
+/* ========================================
+   DETAIL CONTENT
+   ======================================== */
+.detail-content {
+  padding: var(--space-4);
+  background: var(--color-bg-alt);
+  border-radius: var(--radius-sm);
+  min-height: 40px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  color: var(--color-text);
 }
 
-.page-layout {
-  display: flex;
-  height: calc(100vh - 120px);
-  overflow: hidden;
+.case-detail .el-divider {
+  margin: var(--space-4) 0;
 }
 
-.suite-sidebar {
-  flex-shrink: 0;
-  background: #fff;
-  border-radius: 4px;
-  border: 1px solid #e4e7ed;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
+.case-execute .el-divider {
+  margin: var(--space-4) 0;
 }
 
-.resize-handle {
-  width: 6px;
-  flex-shrink: 0;
-  background: #f0f2f5;
-  cursor: col-resize;
-  transition: background-color 0.2s;
-  position: relative;
-  z-index: 10;
-}
-
-.resize-handle:hover {
-  background: #dcdfe6;
-}
-
-.resize-handle:active {
-  background: #c0c4cc;
-}
-
-.suite-header {
-  padding: 12px 16px;
-  border-bottom: 1px solid #e4e7ed;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-weight: 500;
-}
-
-.suite-sidebar :deep(.el-tree) {
-  flex: 1;
-  overflow-y: auto;
-  padding: 8px;
-}
-
-.tree-node {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding-right: 8px;
-  width: 100%;
-}
-
-.node-content {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  overflow: hidden;
-}
-
-.folder-icon {
-  color: #409eff;
-  font-size: 16px;
-  flex-shrink: 0;
-}
-
-.node-label {
-  flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.node-count {
-  color: #909399;
-  font-size: 12px;
-  flex-shrink: 0;
-}
-
-.node-more {
-  opacity: 0;
-  transition: opacity 0.2s;
-}
-
-.tree-node:hover .node-more {
-  opacity: 1;
-}
-
-.content-area {
-  flex: 1;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-}
-
-.content-area :deep(.el-card) {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-}
-
-.content-area :deep(.el-card__body) {
-  flex: 1;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-}
-
-.page-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.header-actions {
-  display: flex;
-  gap: 8px;
-}
-
-.toolbar {
-  display: flex;
-  gap: 12px;
-  margin-bottom: 16px;
-}
-
+/* ========================================
+   STEPS TABLE
+   ======================================== */
 .steps-table-wrapper {
   width: 100%;
 }
 
 .steps-table-wrapper :deep(.el-textarea__inner) {
   resize: none;
-}
-
-.detail-content {
-  padding: 12px;
-  background-color: #f5f7fa;
-  border-radius: 4px;
-  min-height: 40px;
-  white-space: pre-wrap;
-  word-break: break-word;
-}
-
-.case-detail .el-divider {
-  margin: 20px 0;
-}
-
-.case-execute .el-divider {
-  margin: 20px 0;
 }
 </style>

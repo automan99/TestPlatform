@@ -1,0 +1,206 @@
+/* ========================================
+   PAGE LAYOUT - Global Styles
+   统一页面布局样式
+   ======================================== */
+
+/* ========================================
+   PAGE CONTAINER
+   ======================================== */
+.page-container {
+  height: 100%;
+}
+
+.page-layout {
+  display: flex;
+  height: calc(100vh - 120px);
+  overflow: hidden;
+}
+
+/* ========================================
+   SIDEBAR (Tree Panel)
+   ======================================== */
+.page-sidebar {
+  flex-shrink: 0;
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border-light);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.sidebar-header {
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--color-border-light);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.sidebar-title {
+  font-family: var(--font-display);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.sidebar-tree {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-2);
+}
+
+/* ========================================
+   TREE NODE
+   ======================================== */
+.tree-node {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-right: var(--space-2);
+  width: 100%;
+}
+
+.node-content {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  overflow: hidden;
+}
+
+.folder-icon {
+  color: var(--color-accent);
+  font-size: 15px;
+  flex-shrink: 0;
+}
+
+.node-label {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: var(--text-sm);
+}
+
+.node-count {
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+  flex-shrink: 0;
+}
+
+.node-more {
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+}
+
+.tree-node:hover .node-more {
+  opacity: 1;
+}
+
+/* ========================================
+   RESIZE HANDLE
+   ======================================== */
+.resize-handle {
+  width: 6px;
+  flex-shrink: 0;
+  background: var(--color-bg-alt);
+  cursor: col-resize;
+  transition: background var(--transition-base);
+  position: relative;
+  z-index: 10;
+}
+
+.resize-handle:hover {
+  background: var(--color-border);
+}
+
+.resize-handle:active {
+  background: var(--color-text-muted);
+}
+
+/* ========================================
+   CONTENT AREA
+   ======================================== */
+.content-area {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.content-area :deep(.el-card) {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.content-area :deep(.el-card__body) {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ========================================
+   TOOLBAR
+   ======================================== */
+.toolbar {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex: 1;
+}
+
+.toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.search-input {
+  width: 200px;
+}
+
+/* ========================================
+   TABLE
+   ======================================== */
+.page-table {
+  flex: 1;
+  overflow: auto;
+}
+
+.table-pagination {
+  padding: var(--space-3) var(--space-4);
+  border-top: 1px solid var(--color-border-light);
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* ========================================
+   RESPONSIVE
+   ======================================== */
+@media (max-width: 768px) {
+  .page-layout {
+    flex-direction: column;
+  }
+
+  .page-sidebar {
+    width: 100% !important;
+    max-height: 300px;
+  }
+
+  .resize-handle {
+    display: none;
+  }
+
+  .toolbar {
+    flex-wrap: wrap;
+  }
+}

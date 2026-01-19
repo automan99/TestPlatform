@@ -4,7 +4,7 @@
       <el-col :span="6">
         <el-card class="stat-card">
           <div class="stat-content">
-            <div class="stat-icon" style="background: #409eff">
+            <div class="stat-icon stat-icon-primary">
               <el-icon :size="24"><Document /></el-icon>
             </div>
             <div class="stat-info">
@@ -17,7 +17,7 @@
       <el-col :span="6">
         <el-card class="stat-card">
           <div class="stat-content">
-            <div class="stat-icon" style="background: #67c23a">
+            <div class="stat-icon stat-icon-success">
               <el-icon :size="24"><CircleCheck /></el-icon>
             </div>
             <div class="stat-info">
@@ -30,7 +30,7 @@
       <el-col :span="6">
         <el-card class="stat-card">
           <div class="stat-content">
-            <div class="stat-icon" style="background: #f56c6c">
+            <div class="stat-icon stat-icon-error">
               <el-icon :size="24"><CircleClose /></el-icon>
             </div>
             <div class="stat-info">
@@ -43,7 +43,7 @@
       <el-col :span="6">
         <el-card class="stat-card">
           <div class="stat-content">
-            <div class="stat-icon" style="background: #e6a23c">
+            <div class="stat-icon stat-icon-warning">
               <el-icon :size="24"><Calendar /></el-icon>
             </div>
             <div class="stat-info">
@@ -210,7 +210,7 @@ watch(currentProjectId, (newVal) => {
 
 .stat-card {
   cursor: pointer;
-  transition: transform 0.3s;
+  transition: transform var(--transition-base);
 }
 
 .stat-card:hover {
@@ -220,17 +220,34 @@ watch(currentProjectId, (newVal) => {
 .stat-content {
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: var(--space-2);
 }
 
 .stat-icon {
   width: 60px;
   height: 60px;
-  border-radius: 8px;
+  border-radius: var(--radius-lg);
   display: flex;
   align-items: center;
   justify-content: center;
   color: #fff;
+  flex-shrink: 0;
+}
+
+.stat-icon-primary {
+  background: var(--color-accent);
+}
+
+.stat-icon-success {
+  background: var(--color-success);
+}
+
+.stat-icon-error {
+  background: var(--color-error);
+}
+
+.stat-icon-warning {
+  background: var(--color-warning);
 }
 
 .stat-info {
@@ -238,14 +255,15 @@ watch(currentProjectId, (newVal) => {
 }
 
 .stat-value {
-  font-size: 28px;
-  font-weight: bold;
-  color: #303133;
+  font-size: var(--text-3xl);
+  font-weight: 700;
+  color: var(--color-text);
+  line-height: 1;
 }
 
 .stat-label {
-  font-size: 14px;
-  color: #909399;
-  margin-top: 4px;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  margin-top: var(--space-1);
 }
 </style>

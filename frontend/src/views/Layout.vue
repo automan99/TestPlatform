@@ -1,144 +1,194 @@
 <template>
-  <el-container class="layout-container">
-    <el-aside :width="sidebarWidth" class="sidebar">
-      <div class="logo">
-        <el-icon :size="24"><Monitor /></el-icon>
-        <span v-show="!appStore.isSidebarCollapsed">{{ systemName }}</span>
+  <el-container class="precision-layout">
+    <!-- Sidebar with Precision Engineering Aesthetic -->
+    <el-aside :width="sidebarWidth" class="precision-sidebar">
+      <!-- Logo Area -->
+      <div class="sidebar-logo">
+        <div class="logo-mark">
+          <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+            <rect x="2" y="2" width="24" height="24" rx="4" stroke="currentColor" stroke-width="1.5"/>
+            <path d="M9 14L14 9L19 14M9 18L14 13L19 18" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <transition name="logo-fade">
+          <span v-show="!appStore.isSidebarCollapsed" class="logo-type">{{ systemName }}</span>
+        </transition>
       </div>
+
+      <!-- Navigation Menu -->
       <el-menu
         :default-active="currentRoute"
         :collapse="appStore.isSidebarCollapsed"
         router
         class="sidebar-menu"
       >
-        <el-menu-item index="/dashboard">
+        <el-menu-item index="/dashboard" class="nav-item">
           <el-icon><House /></el-icon>
           <template #title>{{ t('menu.home') }}</template>
         </el-menu-item>
-        <el-menu-item index="/test-cases">
+
+        <el-menu-item index="/test-cases" class="nav-item">
           <el-icon><Document /></el-icon>
           <template #title>{{ t('menu.testCases') }}</template>
         </el-menu-item>
-        <el-menu-item index="/test-plans">
+
+        <el-menu-item index="/test-plans" class="nav-item">
           <el-icon><Calendar /></el-icon>
           <template #title>{{ t('menu.testPlans') }}</template>
         </el-menu-item>
-        <el-menu-item index="/environments">
+
+        <el-menu-item index="/environments" class="nav-item">
           <el-icon><Monitor /></el-icon>
           <template #title>{{ t('menu.environments') }}</template>
         </el-menu-item>
-        <el-menu-item index="/defects">
+
+        <el-menu-item index="/defects" class="nav-item">
           <el-icon><CircleClose /></el-icon>
           <template #title>{{ t('menu.defects') }}</template>
         </el-menu-item>
-        <el-menu-item index="/reports">
+
+        <el-menu-item index="/reports" class="nav-item">
           <el-icon><DataAnalysis /></el-icon>
           <template #title>{{ t('menu.reports') }}</template>
         </el-menu-item>
-        <el-menu-item index="/projects">
+
+        <el-menu-item index="/projects" class="nav-item">
           <el-icon><FolderOpened /></el-icon>
           <template #title>{{ t('project.title') }}</template>
         </el-menu-item>
-        <el-menu-item index="/settings">
+
+        <el-menu-item index="/settings" class="nav-item">
           <el-icon><Setting /></el-icon>
           <template #title>{{ t('menu.settings') }}</template>
         </el-menu-item>
       </el-menu>
+
+      <!-- Sidebar Footer -->
+      <div class="sidebar-footer" v-show="!appStore.isSidebarCollapsed">
+        <div class="footer-badge">
+          <span class="badge-label">TestP Platform</span>
+          <span class="badge-version">v1.0.0</span>
+        </div>
+      </div>
     </el-aside>
 
-    <el-container>
-      <el-header class="header">
-        <div class="header-left">
+    <!-- Main Content Area -->
+    <el-container class="content-wrapper">
+      <!-- Header -->
+      <el-header class="precision-header">
+        <div class="header-section header-left">
           <el-button
             :icon="appStore.isSidebarCollapsed ? Expand : Fold"
+            class="icon-btn"
+            @click="appStore.toggleSidebar"
           />
-          <el-breadcrumb separator="/">
-            <el-breadcrumb-item :to="{ path: '/' }">{{ t('menu.home') }}</el-breadcrumb-item>
-            <el-breadcrumb-item v-if="currentRouteMeta?.title">
-              {{ currentRouteMeta.title }}
-            </el-breadcrumb-item>
-          </el-breadcrumb>
+          <nav class="breadcrumb-nav">
+            <el-breadcrumb separator="/">
+              <el-breadcrumb-item :to="{ path: '/' }">{{ t('menu.home') }}</el-breadcrumb-item>
+              <el-breadcrumb-item v-if="currentRouteMeta?.title">
+                {{ currentRouteMeta.title }}
+              </el-breadcrumb-item>
+            </el-breadcrumb>
+          </nav>
         </div>
-        <div class="header-right">
-          <!-- 项目切换器 -->
-          <el-dropdown v-if="projectStore.projectList.length > 0" @command="handleProjectSwitch">
-            <div class="project-info">
-              <el-icon :size="18"><FolderOpened /></el-icon>
-              <span class="project-name">{{ currentProjectName }}</span>
-              <el-icon :size="12"><ArrowDown /></el-icon>
-            </div>
-            <template #dropdown>
-              <el-dropdown-menu>
-                <el-dropdown-item
-                  v-for="project in projectStore.projectList"
-                  :key="project.id"
-                  :command="project.id"
-                  :disabled="project.id === currentProjectId"
-                >
-                  <span
-                    v-if="project.icon"
-                    class="project-icon"
-                    :style="{ backgroundColor: project.color }"
+
+        <div class="header-section header-right">
+          <!-- Project Switcher -->
+          <div v-if="projectStore.projectList.length > 0" class="header-control">
+            <el-dropdown @command="handleProjectSwitch" trigger="click">
+              <div class="control-trigger">
+                <el-icon><FolderOpened /></el-icon>
+                <span class="control-label">{{ currentProjectName }}</span>
+                <el-icon class="control-caret"><ArrowDown /></el-icon>
+              </div>
+              <template #dropdown>
+                <el-dropdown-menu class="precision-dropdown">
+                  <el-dropdown-item
+                    v-for="project in projectStore.projectList"
+                    :key="project.id"
+                    :command="project.id"
+                    :disabled="project.id === currentProjectId"
                   >
-                    {{ project.icon }}
-                  </span>
-                  <span
-                    v-else
-                    class="project-icon"
-                    :style="{ backgroundColor: project.color }"
+                    <span
+                      v-if="project.icon"
+                      class="project-indicator"
+                      :style="{ backgroundColor: project.color }"
+                    ></span>
+                    <span
+                      v-else
+                      class="project-indicator indicator-text"
+                      :style="{ backgroundColor: project.color }"
+                    >
+                      {{ project.name.charAt(0) }}
+                    </span>
+                    <span class="dropdown-text">{{ project.name }}</span>
+                    <span v-if="project.id === currentProjectId" class="current-badge">Current</span>
+                  </el-dropdown-item>
+                </el-dropdown-menu>
+              </template>
+            </el-dropdown>
+          </div>
+
+          <!-- Tenant Switcher -->
+          <div v-if="tenantStore.tenantList.length > 0" class="header-control">
+            <el-dropdown @command="handleTenantSwitch" trigger="click">
+              <div class="control-trigger">
+                <el-icon><OfficeBuilding /></el-icon>
+                <span class="control-label">{{ currentTenantName }}</span>
+                <el-icon class="control-caret"><ArrowDown /></el-icon>
+              </div>
+              <template #dropdown>
+                <el-dropdown-menu class="precision-dropdown">
+                  <el-dropdown-item
+                    v-for="tenant in tenantStore.tenantList"
+                    :key="tenant.id"
+                    :command="tenant.id"
+                    :disabled="tenant.id === currentTenantId"
                   >
-                    {{ project.name.charAt(0) }}
-                  </span>
-                  <span style="margin-left: 8px">{{ project.name }}</span>
-                  <el-tag v-if="project.id === currentProjectId" size="small" type="success" style="margin-left: 8px">
-                    当前
-                  </el-tag>
-                </el-dropdown-item>
-              </el-dropdown-menu>
-            </template>
-          </el-dropdown>
-          <div style="width: 1px; height: 24px; background: #e4e7ed"></div>
-          <!-- 租户切换器 -->
-          <el-dropdown v-if="tenantStore.tenantList.length > 0" @command="handleTenantSwitch">
-            <div class="tenant-info">
-              <el-icon :size="18"><OfficeBuilding /></el-icon>
-              <span class="tenant-name">{{ currentTenantName }}</span>
-              <el-icon :size="12"><ArrowDown /></el-icon>
+                    <span class="dropdown-text">{{ tenant.name }}</span>
+                    <span v-if="tenant.id === currentTenantId" class="current-badge">Current</span>
+                  </el-dropdown-item>
+                </el-dropdown-menu>
+              </template>
+            </el-dropdown>
+          </div>
+
+          <!-- Theme Switcher -->
+          <ThemeSwitcher />
+
+          <!-- User Menu -->
+          <el-dropdown trigger="click" class="user-control">
+            <div class="user-trigger">
+              <div class="user-chip">
+                <el-icon><User /></el-icon>
+              </div>
+              <span class="user-label">Admin</span>
             </div>
             <template #dropdown>
-              <el-dropdown-menu>
-                <el-dropdown-item
-                  v-for="tenant in tenantStore.tenantList"
-                  :key="tenant.id"
-                  :command="tenant.id"
-                  :disabled="tenant.id === currentTenantId"
-                >
-                  {{ tenant.name }}
-                  <el-tag v-if="tenant.id === currentTenantId" size="small" type="success" style="margin-left: 8px">
-                    {{ t('tenant.currentTenant') }}
-                  </el-tag>
+              <el-dropdown-menu class="precision-dropdown">
+                <el-dropdown-item>
+                  <el-icon><User /></el-icon>
+                  <span class="dropdown-text">{{ t('common.edit') }} Profile</span>
                 </el-dropdown-item>
-              </el-dropdown-menu>
-            </template>
-          </el-dropdown>
-          <div style="width: 1px; height: 24px; background: #e4e7ed"></div>
-          <el-dropdown>
-            <div class="user-info">
-              <el-icon :size="20"><User /></el-icon>
-              <span>Admin</span>
-            </div>
-            <template #dropdown>
-              <el-dropdown-menu>
-                <el-dropdown-item>{{ t('common.edit') }} Profile</el-dropdown-item>
-                <el-dropdown-item divided @click="handleLogout">{{ t('common.back') }}</el-dropdown-item>
+                <el-dropdown-item divided @click="handleLogout" class="dropdown-danger">
+                  <el-icon><SwitchButton /></el-icon>
+                  <span class="dropdown-text">{{ t('common.back') }}</span>
+                </el-dropdown-item>
               </el-dropdown-menu>
             </template>
           </el-dropdown>
         </div>
       </el-header>
 
-      <el-main class="main-content">
-        <router-view />
+      <!-- Page Content -->
+      <el-main class="precision-main">
+        <div class="page-container">
+          <router-view v-slot="{ Component }">
+            <transition name="page-transition" mode="out-in">
+              <component :is="Component" />
+            </transition>
+          </router-view>
+        </div>
       </el-main>
     </el-container>
   </el-container>
@@ -154,8 +204,10 @@ import { useProjectStore } from '@/store/project'
 import { ElMessage } from 'element-plus'
 import {
   Monitor, House, Document, Calendar, CircleClose,
-  DataAnalysis, Setting, Expand, Fold, User, OfficeBuilding, ArrowDown, FolderOpened
+  DataAnalysis, Setting, Expand, Fold, User, OfficeBuilding,
+  ArrowDown, FolderOpened, SwitchButton
 } from '@element-plus/icons-vue'
+import ThemeSwitcher from '@/components/ThemeSwitcher.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -164,10 +216,9 @@ const { t } = useI18n()
 const tenantStore = useTenantStore()
 const projectStore = useProjectStore()
 
-// 系统名称
+// System name
 const systemName = ref(t('dashboard.title'))
 
-// 加载系统名称
 function loadSystemName() {
   const savedSettings = localStorage.getItem('systemSettings')
   if (savedSettings) {
@@ -186,14 +237,14 @@ const currentRoute = computed(() => route.path)
 const currentRouteMeta = computed(() => route.meta)
 
 const sidebarWidth = computed(() =>
-  appStore.isSidebarCollapsed ? '64px' : '200px'
+  appStore.isSidebarCollapsed ? '64px' : '220px'
 )
 
 const currentTenantId = computed(() => tenantStore.currentTenant?.id)
 const currentTenantName = computed(() => tenantStore.currentTenant?.name || t('tenant.switchTenant'))
 
 const currentProjectId = computed(() => projectStore.currentProject?.id)
-const currentProjectName = computed(() => projectStore.currentProject?.name || '选择项目')
+const currentProjectName = computed(() => projectStore.currentProject?.name || 'Select Project')
 
 async function handleTenantSwitch(tenantId) {
   try {
@@ -209,9 +260,8 @@ async function handleProjectSwitch(projectId) {
   try {
     await projectStore.switchProject(projectId)
     ElMessage.success(t('project.switchSuccess'))
-    // 各页面的watch会自动重新加载数据，不需要刷新整个页面
   } catch (error) {
-    ElMessage.error(error.response?.data?.message || '切换项目失败')
+    ElMessage.error(error.response?.data?.message || 'Switch project failed')
   }
 }
 
@@ -221,16 +271,11 @@ function handleLogout() {
 }
 
 onMounted(async () => {
-  // 加载系统名称
   loadSystemName()
 
-  // 检查是否已登录
   const token = localStorage.getItem('token')
-  if (!token) {
-    return
-  }
+  if (!token) return
 
-  // 加载租户
   try {
     await tenantStore.loadMyTenants()
     if (!tenantStore.currentTenant && tenantStore.tenantList.length > 0) {
@@ -243,171 +288,555 @@ onMounted(async () => {
       }
     }
 
-    // 加载项目
     await projectStore.fetchProjects()
     projectStore.init()
   } catch (error) {
-    console.error('初始化数据失败:', error)
+    console.error('Initialize data failed:', error)
   }
 })
 </script>
 
 <style scoped>
-.layout-container {
-  height: 100%;
-}
-
-.sidebar {
-  background: #304156;
-  transition: width 0.3s;
+/* ========================================
+   PRECISION LAYOUT - Design System v2
+   ======================================== */
+.precision-layout {
+  height: 100vh;
+  background: var(--color-bg);
+  font-family: var(--font-body);
   overflow: hidden;
 }
 
-.logo {
-  height: 60px;
+/* ========================================
+   SIDEBAR
+   ======================================== */
+.precision-sidebar {
+  background: var(--sidebar-bg, var(--color-primary));
+  border-right: 1px solid var(--sidebar-border, rgba(99, 102, 241, 0.12));
+  transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+/* Logo */
+.sidebar-logo {
+  height: 64px;
+  display: flex;
+  align-items: center;
+  padding: 0 var(--space-5);
+  gap: var(--space-3);
+  border-bottom: 1px solid rgba(99, 102, 241, 0.12);
+  position: relative;
+  z-index: 1;
+}
+
+.logo-mark {
+  width: 36px;
+  height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #fff;
-  font-size: 18px;
-  font-weight: bold;
-  gap: 8px;
+  background: linear-gradient(135deg, var(--color-accent) 0%, #818cf8 100%);
+  border-radius: var(--radius-md);
+  color: #ffffff;
+  flex-shrink: 0;
+  box-shadow: 0 2px 12px rgba(99, 102, 241, 0.35);
 }
 
+.logo-type {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+}
+
+.logo-fade-enter-active,
+.logo-fade-leave-active {
+  transition: all 0.2s ease;
+}
+
+.logo-fade-enter-from,
+.logo-fade-leave-to {
+  opacity: 0;
+  transform: translateX(-8px);
+}
+
+/* Menu */
 .sidebar-menu {
+  flex: 1;
   border: none;
-  background: #304156;
+  background: transparent;
+  padding: var(--space-3) var(--space-2);
+  overflow-y: auto;
+  overflow-x: hidden;
+  position: relative;
+  z-index: 1;
 }
 
 .sidebar-menu:not(.el-menu--collapse) {
-  width: 200px;
+  width: 220px;
 }
 
-/* 菜单文字颜色 */
-:deep(.el-menu-item) {
-  color: #bfcbd9;
-  font-size: 14px;
+/* Custom scrollbar */
+.sidebar-menu::-webkit-scrollbar {
+  width: 4px;
 }
 
-:deep(.el-menu-item:hover) {
-  background: #263445 !important;
-  color: #fff !important;
+.sidebar-menu::-webkit-scrollbar-track {
+  background: transparent;
 }
 
-:deep(.el-menu-item.is-active) {
-  background: #409eff !important;
-  color: #fff !important;
+.sidebar-menu::-webkit-scrollbar-thumb {
+  background: var(--sidebar-scrollbar-bg, rgba(99, 102, 241, 0.2));
+  border-radius: 2px;
 }
 
-/* 菜单图标颜色 */
-:deep(.el-menu-item .el-icon) {
-  color: inherit;
+.sidebar-menu::-webkit-scrollbar-thumb:hover {
+  background: var(--sidebar-scrollbar-hover, rgba(99, 102, 241, 0.3));
 }
 
-/* 折叠时的样式 */
-:deep(.el-menu--collapse .el-menu-item) {
-  color: #bfcbd9;
+/* Nav Items */
+:deep(.nav-item) {
+  margin-bottom: 2px;
+  border-radius: var(--radius-md);
+  height: 40px;
+  line-height: 40px;
+  color: var(--sidebar-item-color, rgba(255, 255, 255, 0.6));
+  transition: all 0.15s ease;
+  position: relative;
 }
 
-:deep(.el-menu--collapse .el-menu-item:hover) {
-  color: #fff !important;
+:deep(.nav-item::before) {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 2px;
+  height: 0;
+  background: var(--color-accent);
+  border-radius: 1px;
+  transition: height 0.15s ease;
 }
 
-:deep(.el-menu--collapse .el-menu-item.is-active) {
-  color: #fff !important;
+:deep(.nav-item:hover) {
+  background: var(--sidebar-item-hover-bg, rgba(255, 255, 255, 0.06));
+  color: var(--sidebar-item-hover-color, rgba(255, 255, 255, 0.9));
 }
 
-.header {
+:deep(.nav-item.is-active) {
+  background: var(--sidebar-item-active-bg, linear-gradient(90deg, rgba(99, 102, 241, 0.16) 0%, transparent 100%));
+  color: var(--sidebar-item-active-color, #ffffff);
+  font-weight: 600;
+}
+
+:deep(.nav-item.is-active::before) {
+  height: 20px;
+}
+
+:deep(.nav-item .el-icon) {
+  font-size: 16px;
+  margin-right: 10px;
+}
+
+:deep(.el-menu--collapse .nav-item) {
+  padding: 0;
+  justify-content: center;
+}
+
+:deep(.el-menu--collapse .nav-item .el-icon) {
+  margin-right: 0;
+}
+
+:deep(.el-menu--collapse .nav-item span) {
+  display: none;
+}
+
+/* Sidebar Footer */
+.sidebar-footer {
+  padding: var(--space-4) var(--space-5);
+  border-top: 1px solid var(--sidebar-footer-border, rgba(99, 102, 241, 0.12));
+  position: relative;
+  z-index: 1;
+}
+
+.footer-badge {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.badge-label {
+  font-family: var(--font-display);
+  font-size: 10px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.4);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.badge-version {
+  font-family: var(--font-display);
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.25);
+}
+
+/* ========================================
+   CONTENT WRAPPER
+   ======================================== */
+.content-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ========================================
+   HEADER
+   ======================================== */
+.precision-header {
+  height: 56px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-bottom: 1px solid #e4e7ed;
-  background: #fff;
+  padding: 0 var(--space-6);
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  position: relative;
+  z-index: 10;
+}
+
+.header-section {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
 }
 
 .header-left {
-  display: flex;
-  align-items: center;
-  gap: 5px;
+  gap: var(--space-4);
 }
 
 .header-right {
+  gap: var(--space-2);
+}
+
+/* Icon Button */
+.icon-btn {
+  width: 36px;
+  height: 36px;
   display: flex;
-  align-items: center;
-  gap: 5px;
-}
-
-.tenant-info {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  cursor: pointer;
-  padding: 6px 12px;
-  border-radius: 4px;
-  transition: background 0.2s;
-}
-
-.tenant-info:hover {
-  background: #f5f7fa;
-}
-
-.tenant-name {
-  font-size: 14px;
-  max-width: 150px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.project-info {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  cursor: pointer;
-  padding: 6px 12px;
-  border-radius: 4px;
-  transition: background 0.2s;
-}
-
-.project-info:hover {
-  background: #f5f7fa;
-}
-
-.project-name {
-  font-size: 14px;
-  max-width: 120px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.project-icon {
-  display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
-  border-radius: 4px;
-  color: white;
-  font-weight: 500;
-  font-size: 12px;
+  padding: 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  transition: all 0.15s ease;
 }
 
-.user-info {
+.icon-btn:hover {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+  background: rgba(99, 102, 241, 0.06);
+}
+
+/* Breadcrumb */
+.breadcrumb-nav :deep(.el-breadcrumb) {
+  font-family: var(--font-display);
+  font-size: 13px;
+}
+
+.breadcrumb-nav :deep(.el-breadcrumb__inner) {
+  color: var(--color-text-secondary);
+  font-weight: 500;
+  transition: color 0.15s ease;
+}
+
+.breadcrumb-nav :deep(.el-breadcrumb__inner:hover) {
+  color: var(--color-accent);
+}
+
+.breadcrumb-nav :deep(.el-breadcrumb__separator) {
+  color: var(--color-text-muted);
+  margin: 0 var(--space-2);
+}
+
+.breadcrumb-nav :deep(.el-breadcrumb__item:last-child .el-breadcrumb__inner) {
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+/* Header Controls */
+.header-control {
   display: flex;
   align-items: center;
-  gap: 8px;
+}
+
+.control-trigger {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-radius: 0;
+  color: var(--color-text);
   cursor: pointer;
-  padding: 8px;
-  border-radius: 4px;
+  transition: background var(--transition-fast);
+  font-size: var(--text-sm);
 }
 
-.user-info:hover {
-  background: #f5f7fa;
+.control-trigger:hover {
+  background: var(--color-bg-alt);
 }
 
-.main-content {
-  background: #f5f7fa;
-  padding: 5px;
+.control-trigger .el-icon:first-child {
+  color: var(--color-text);
+  font-size: var(--text-md);
+}
+
+.control-label {
+  font-family: var(--font-display);
+  font-weight: 500;
+  color: var(--color-text);
+  max-width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.control-caret {
+  font-size: var(--text-xs);
+  color: var(--color-text);
+  transition: transform var(--transition-fast);
+}
+
+/* User Control */
+.user-control {
+  display: flex;
+  align-items: center;
+}
+
+.user-trigger {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 4px 10px;
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.user-trigger:hover {
+  background: var(--color-bg-alt);
+}
+
+.user-chip {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-light) 100%);
+  border-radius: var(--radius-md);
+  color: #ffffff;
+  font-size: 14px;
+}
+
+.user-label {
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+/* ========================================
+   DROPDOWN
+   ======================================== */
+.precision-dropdown {
+  border: 1px solid var(--color-border) !important;
+  border-radius: 0;
+  padding: var(--space-2);
+  background: var(--color-surface);
+  box-shadow: none;
+  min-width: 180px;
+}
+
+/* 针对 Element Plus popper 容器 */
+:deep(.el-dropdown__popper),
+:deep(.el-select__popper) {
+  border: 1px solid var(--color-border) !important;
+}
+
+:deep(.el-popper) {
+  border: 1px solid var(--color-border) !important;
+}
+
+/* 移除 popper 的白色背景 */
+:deep(.el-popper.is-light),
+:deep(.el-dropdown__popper.is-light),
+:deep(.el-select__popper.is-light) {
+  background: var(--color-surface) !important;
+  box-shadow: none !important;
+}
+
+/* 确保下拉菜单有正确的背景和阴影 */
+:deep(.el-popper.is-light .el-dropdown-menu),
+:deep(.el-dropdown__popper.is-light .el-dropdown-menu) {
+  background: var(--color-surface) !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+}
+
+:deep(.precision-dropdown .el-dropdown-menu__item) {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 8px 10px;
+  border-radius: 0;
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--color-text);
+  transition: all 0.15s ease;
+}
+
+:deep(.precision-dropdown .el-dropdown-menu__item:hover) {
+  background: var(--color-bg-alt);
+  color: var(--color-accent);
+}
+
+:deep(.precision-dropdown .el-dropdown-menu__item.is-disabled) {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+:deep(.precision-dropdown .el-dropdown-menu__item .el-icon) {
+  font-size: 15px;
+  color: var(--color-text-secondary);
+}
+
+.project-indicator {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0;
+  color: #ffffff;
+  font-family: var(--font-display);
+  font-size: 10px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.indicator-text {
+  font-size: 9px;
+}
+
+.dropdown-text {
+  flex: 1;
+  font-weight: 500;
+}
+
+.current-badge {
+  padding: 2px 8px;
+  background: rgba(34, 197, 94, 0.12);
+  color: var(--color-success);
+  font-family: var(--font-display);
+  font-size: 10px;
+  font-weight: 600;
+  border-radius: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.dropdown-danger {
+  color: var(--color-error);
+}
+
+.dropdown-danger:hover {
+  background: rgba(239, 68, 68, 0.08) !important;
+  color: var(--color-error) !important;
+}
+
+/* ========================================
+   MAIN CONTENT
+   ======================================== */
+.precision-main {
+  flex: 1;
+  overflow: hidden;
+  background: var(--color-bg);
+}
+
+.page-container {
+  height: 100%;
+  overflow-y: auto;
+  padding: 0;
+}
+
+.page-container > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Custom scrollbar */
+.page-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.page-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.page-container::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 0;
+  transition: background 0.15s ease;
+}
+
+.page-container::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-muted);
+}
+
+/* ========================================
+   PAGE TRANSITIONS
+   ======================================== */
+.page-transition-enter-active,
+.page-transition-leave-active {
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.page-transition-enter-from {
+  opacity: 0;
+  transform: translateY(8px);
+}
+
+.page-transition-leave-to {
+  opacity: 0;
+  transform: translateY(-8px);
+}
+
+/* ========================================
+   RESPONSIVE
+   ======================================== */
+@media (max-width: 768px) {
+  .precision-header {
+    padding: 0 var(--space-4);
+  }
+
+  .page-container {
+    padding: var(--space-4);
+  }
+
+  .control-label {
+    display: none;
+  }
+
+  .user-label {
+    display: none;
+  }
 }
 </style>

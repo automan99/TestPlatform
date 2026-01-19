@@ -172,17 +172,17 @@
           </el-col>
           <el-col :span="6">
             <el-statistic title="通过" :value="currentReport.passed_cases">
-              <template #suffix><span style="color: #67c23a">▼</span></template>
+              <template #suffix><span style="color: var(--color-success)">▼</span></template>
             </el-statistic>
           </el-col>
           <el-col :span="6">
             <el-statistic title="失败" :value="currentReport.failed_cases">
-              <template #suffix><span style="color: #f56c6c">▼</span></template>
+              <template #suffix><span style="color: var(--color-error)">▼</span></template>
             </el-statistic>
           </el-col>
           <el-col :span="6">
             <el-statistic title="缺陷" :value="currentReport.total_defects">
-              <template #suffix><span style="color: #e6a23c">▼</span></template>
+              <template #suffix><span style="color: var(--color-warning)">▼</span></template>
             </el-statistic>
           </el-col>
         </el-row>
@@ -237,9 +237,9 @@ function getReportTypeText(type) {
 }
 
 function getPassRateColor(rate) {
-  if (rate < 60) return '#f56c6c'
-  if (rate < 80) return '#e6a23c'
-  return '#67c23a'
+  if (rate < 60) return 'var(--color-error)'
+  if (rate < 80) return 'var(--color-warning)'
+  return 'var(--color-success)'
 }
 
 async function loadReports() {
@@ -316,6 +316,15 @@ function handleSubmit() {
 }
 
 function initCharts() {
+  // Get theme colors
+  const root = document.documentElement
+  const computedStyle = getComputedStyle(root)
+  const colorSuccess = computedStyle.getPropertyValue('--color-success').trim() || '#67c23a'
+  const colorError = computedStyle.getPropertyValue('--color-error').trim() || '#f56c6c'
+  const colorWarning = computedStyle.getPropertyValue('--color-warning').trim() || '#e6a23c'
+  const colorInfo = computedStyle.getPropertyValue('--color-info').trim() || '#909399'
+  const colorAccent = computedStyle.getPropertyValue('--color-accent').trim() || '#409eff'
+
   // 饼图
   const pieChart = echarts.init(pieChartRef.value)
   pieChart.setOption({
@@ -325,10 +334,10 @@ function initCharts() {
       type: 'pie',
       radius: '50%',
       data: [
-        { value: 335, name: '通过' },
-        { value: 234, name: '失败' },
-        { value: 135, name: '阻塞' },
-        { value: 48, name: '跳过' }
+        { value: 335, name: '通过', itemStyle: { color: colorSuccess } },
+        { value: 234, name: '失败', itemStyle: { color: colorError } },
+        { value: 135, name: '阻塞', itemStyle: { color: colorWarning } },
+        { value: 48, name: '跳过', itemStyle: { color: colorInfo } }
       ],
       emphasis: {
         itemStyle: {
@@ -349,7 +358,7 @@ function initCharts() {
     series: [{
       data: [12, 23, 45, 67, 8],
       type: 'bar',
-      itemStyle: { color: '#409eff' }
+      itemStyle: { color: colorAccent }
     }]
   })
 
@@ -360,8 +369,8 @@ function initCharts() {
     xAxis: { type: 'category', data: ['周一', '周二', '周三', '周四', '周五', '周六', '周日'] },
     yAxis: { type: 'value' },
     series: [
-      { name: '用例数', data: [120, 132, 101, 134, 90, 230, 210], type: 'line', smooth: true },
-      { name: '通过率', data: [85, 88, 90, 87, 92, 95, 93], type: 'line', smooth: true }
+      { name: '用例数', data: [120, 132, 101, 134, 90, 230, 210], type: 'line', smooth: true, itemStyle: { color: colorAccent } },
+      { name: '通过率', data: [85, 88, 90, 87, 92, 95, 93], type: 'line', smooth: true, itemStyle: { color: colorSuccess } }
     ]
   })
 }
@@ -389,16 +398,16 @@ onMounted(() => {
 
 .header-actions {
   display: flex;
-  gap: 8px;
+  gap: var(--space-2);
 }
 
 .toolbar {
   display: flex;
-  gap: 12px;
-  margin-bottom: 16px;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
 }
 
 .report-tabs :deep(.el-tabs__content) {
-  padding-top: 20px;
+  padding-top: var(--space-5);
 }
 </style>

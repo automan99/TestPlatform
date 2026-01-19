@@ -1,10 +1,10 @@
 <template>
-  <div class="test-plan-page">
+  <div class="page-container">
     <div class="page-layout" ref="layoutRef">
       <!-- 左侧目录树 -->
-      <div class="folder-sidebar" :style="{ width: sidebarWidth + 'px' }">
-        <div class="folder-header">
-          <span>目录</span>
+      <div class="page-sidebar folder-sidebar" :style="{ width: sidebarWidth + 'px' }">
+        <div class="sidebar-header">
+          <span class="sidebar-title">目录</span>
           <el-dropdown trigger="click" @command="handleFolderCommand">
             <el-button type="primary" link size="small">
               <el-icon><Plus /></el-icon>
@@ -523,9 +523,9 @@ function getStatusText(status) {
 }
 
 function getProgressColor(percentage) {
-  if (percentage < 30) return '#f56c6c'
-  if (percentage < 70) return '#e6a23c'
-  return '#67c23a'
+  if (percentage < 30) return 'var(--color-error)'
+  if (percentage < 70) return 'var(--color-warning)'
+  return 'var(--color-success)'
 }
 
 async function loadPlans() {
@@ -860,132 +860,5 @@ watch(currentProjectId, (newVal, oldVal) => {
 </script>
 
 <style scoped>
-.test-plan-page {
-  height: 100%;
-}
-
-.page-layout {
-  display: flex;
-  height: calc(100vh - 120px);
-  overflow: hidden;
-}
-
-.folder-sidebar {
-  flex-shrink: 0;
-  background: #fff;
-  border-radius: 4px;
-  border: 1px solid #e4e7ed;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-.resize-handle {
-  width: 6px;
-  flex-shrink: 0;
-  background: #f0f2f5;
-  cursor: col-resize;
-  transition: background-color 0.2s;
-  position: relative;
-  z-index: 10;
-}
-
-.resize-handle:hover {
-  background: #dcdfe6;
-}
-
-.resize-handle:active {
-  background: #c0c4cc;
-}
-
-.folder-header {
-  padding: 12px 16px;
-  border-bottom: 1px solid #e4e7ed;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-weight: 500;
-}
-
-.folder-sidebar :deep(.el-tree) {
-  flex: 1;
-  overflow-y: auto;
-  padding: 8px;
-}
-
-.tree-node {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding-right: 8px;
-  width: 100%;
-}
-
-.node-content {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  overflow: hidden;
-}
-
-.folder-icon {
-  color: #409eff;
-  font-size: 16px;
-  flex-shrink: 0;
-}
-
-.node-label {
-  flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.node-count {
-  color: #909399;
-  font-size: 12px;
-  flex-shrink: 0;
-}
-
-.node-more {
-  opacity: 0;
-  transition: opacity 0.2s;
-}
-
-.tree-node:hover .node-more {
-  opacity: 1;
-}
-
-.content-area {
-  flex: 1;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-}
-
-.content-area :deep(.el-card) {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-}
-
-.content-area :deep(.el-card__body) {
-  flex: 1;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-}
-
-.page-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.toolbar {
-  display: flex;
-  gap: 12px;
-  margin-bottom: 16px;
-}
+/* Page-specific styles only - general layout styles are in page-layout.css */
 </style>

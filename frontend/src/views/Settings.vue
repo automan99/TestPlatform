@@ -895,43 +895,43 @@ function handleSubmitWorkflow() {
 
 .toolbar {
   display: flex;
-  gap: 12px;
-  margin-bottom: 16px;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
 }
 
 .settings-tabs :deep(.el-tabs__content) {
-  padding-top: 20px;
+  padding-top: var(--space-5);
 }
 
 .color-preview {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-2);
 }
 
 .color-box {
   width: 20px;
   height: 20px;
-  border-radius: 4px;
-  border: 1px solid #dcdfe6;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
 }
 
 .color-picker-wrapper {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--space-3);
 }
 
 .color-value {
-  color: #606266;
-  font-size: 14px;
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
   min-width: 80px;
 }
 
 .color-preview-box {
   width: 30px;
   height: 30px;
-  border-radius: 4px;
-  border: 1px solid #dcdfe6;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
 }
 </style>

@@ -277,3 +277,6 @@ docker run -p 5000:5000 test-management
 ## License
 
 MIT
+
+## AI开发经验
+1. 前端：使用Frontend Design Skills，去https://coolors.co/ 生成配色方案，使用https://www.figma.com/ 设计界面，使用https://www.figma.com/community/plugin/1140011770466815，提示词中控制风格

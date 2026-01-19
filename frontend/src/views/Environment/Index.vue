@@ -515,16 +515,16 @@ onMounted(() => {
 
 .header-actions {
   display: flex;
-  gap: 8px;
+  gap: var(--space-2);
 }
 
 .toolbar {
   display: flex;
-  gap: 12px;
-  margin-bottom: 16px;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
 }
 
 .env-tabs :deep(.el-tabs__content) {
-  padding-top: 20px;
+  padding-top: var(--space-5);
 }
 </style>
