@@ -1,15 +1,33 @@
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
-import QS from 'qs'
 
 let errorMessageShown = false
 let redirecting = false
 
+// Custom params serializer to handle arrays as comma-separated values
+function serializeParams(params) {
+  const parts = []
+  for (const key in params) {
+    const value = params[key]
+    if (value === null || value === undefined) {
+      continue
+    }
+    if (Array.isArray(value)) {
+      // Serialize arrays as comma-separated: key=1,2,3
+      parts.push(`${encodeURIComponent(key)}=${encodeURIComponent(value.join(','))}`)
+    } else {
+      parts.push(`${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
+    }
+  }
+  return parts.join('&')
+}
+
 const request = axios.create({
   baseURL: '/api',
   timeout: 30000,
-  paramsSerializer: (params) => {
-    return QS.stringify(params, { arrayFormat: 'comma' })
+  paramsSerializer: serializeParams,
+  headers: {
+    'Content-Type': 'application/json'
   }
 })
 

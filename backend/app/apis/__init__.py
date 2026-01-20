@@ -30,6 +30,7 @@ from app.apis.user import user_ns
 from app.apis.oauth import oauth_ns
 from app.apis.project import project_ns
 from app.apis.ai_execution import ai_execution_ns
+from app.apis.mcp_skills import mcp_server_ns, skill_ns
 
 # 注册命名空间
 api.add_namespace(project_ns, path='/projects')
@@ -51,3 +52,5 @@ api.add_namespace(auth_ns, path='/auth')
 api.add_namespace(user_ns, path='/users')
 api.add_namespace(oauth_ns, path='/oauth')
 api.add_namespace(ai_execution_ns, path='/ai-execution')
+api.add_namespace(mcp_server_ns, path='/mcp-servers')
+api.add_namespace(skill_ns, path='/skills')

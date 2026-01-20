@@ -47,6 +47,11 @@
           <template #title>{{ t('menu.defects') }}</template>
         </el-menu-item>
 
+        <el-menu-item index="/mcp-skills" class="nav-item">
+          <el-icon><Connection /></el-icon>
+          <template #title>{{ t('menu.mcpSkills') }}</template>
+        </el-menu-item>
+
         <el-menu-item index="/reports" class="nav-item">
           <el-icon><DataAnalysis /></el-icon>
           <template #title>{{ t('menu.reports') }}</template>
@@ -206,7 +211,7 @@ import { ElMessage } from 'element-plus'
 import {
   Monitor, House, Document, Calendar, CircleClose,
   DataAnalysis, Setting, Expand, Fold, User, OfficeBuilding,
-  ArrowDown, FolderOpened, SwitchButton
+  ArrowDown, FolderOpened, SwitchButton, Connection
 } from '@element-plus/icons-vue'
 
 const route = useRoute()

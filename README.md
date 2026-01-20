@@ -130,7 +130,7 @@ venv\Scripts\activate
 source venv/bin/activate
 
 # 安装依赖
-pip install -r requirements.txt
+
 
 # 配置数据库
 # 修改 app/config.py 中的数据库连接配置

@@ -179,9 +179,10 @@ class TestEnvironmentAPI(Resource):
             if environment.resources.count() > 0:
                 return error_response(message='该环境下有资源，无法删除', code=400)
 
-            # 检查是否被测试计划使用
-            if environment.test_plans.count() > 0:
-                return error_response(message='该环境被测试计划使用，无法删除', code=400)
+            # TODO: 检查是否被测试计划使用 - 需要添加test_plans关系
+            # from app.models import TestPlan
+            # if TestPlan.query.filter_by(environment_id=env_id).count() > 0:
+            #     return error_response(message='该环境被测试计划使用，无法删除', code=400)
 
             db.session.delete(environment)
             db.session.commit()

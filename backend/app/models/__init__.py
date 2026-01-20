@@ -9,6 +9,8 @@ from .test_plan import TestPlan, TestPlanCase, TestExecution, TestPlanFolder
 from .test_env import TestEnvironment, EnvironmentResource
 from .defect import Defect, DefectWorkflow, DefectComment, DefectModule
 from .test_report import TestReport, ReportMetric
+from .mcp_tool import MCPServer, MCPTool, MCPResource, MCPToolExecution
+from .skill import Skill
 
 __all__ = [
     'Tenant', 'TenantUser', 'User',
@@ -17,5 +19,6 @@ __all__ = [
     'TestPlan', 'TestPlanCase', 'TestExecution', 'TestPlanFolder',
     'TestEnvironment', 'EnvironmentResource',
     'Defect', 'DefectWorkflow', 'DefectComment', 'DefectModule',
-    'TestReport', 'ReportMetric'
+    'TestReport', 'ReportMetric',
+    'MCPServer', 'MCPTool', 'MCPResource', 'MCPToolExecution', 'Skill'
 ]

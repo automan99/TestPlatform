@@ -4,7 +4,17 @@
       "Bash(venv/Scripts/python:*)",
       "Bash(curl:*)",
       "Bash(python:*)",
-      "Skill(frontend-design:frontend-design)"
+      "Skill(frontend-design:frontend-design)",
+      "Bash(dir:*)",
+      "Bash(findstr:*)",
+      "Bash(pip install:*)",
+      "Bash(D:\\\\projects\\\\testp\\\\backend\\\\venv\\\\Scripts\\\\pip.exe install:*)",
+      "Bash(./venv/Scripts/pip:*)",
+      "Bash(set FLASK_APP=run.py:*)",
+      "Bash(./venv/Scripts/flask db upgrade:*)",
+      "Bash(./venv/Scripts/python:*)",
+      "Bash(pip show:*)",
+      "WebSearch"
     ]
   }
 }

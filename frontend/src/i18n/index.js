@@ -40,6 +40,7 @@ const messages = {
       testPlans: '测试计划',
       environments: '测试环境',
       defects: '缺陷管理',
+      mcpSkills: 'MCP/Skills',
       reports: '测试报告',
       settings: '系统设置'
     },
@@ -603,6 +604,7 @@ const messages = {
       testPlans: 'Test Plans',
       environments: 'Environments',
       defects: 'Defects',
+      mcpSkills: 'MCP & Skills',
       reports: 'Reports',
       settings: 'Settings'
     },
