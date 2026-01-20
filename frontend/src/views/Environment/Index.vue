@@ -1,40 +1,34 @@
 <template>
-  <div class="environment-page">
+  <div class="environment-page animate-fade-in-up">
     <el-card>
       <el-tabs v-model="activeTab" class="env-tabs" @tab-change="handleTabChange">
         <el-tab-pane label="环境列表" name="list">
           <div class="toolbar">
             <el-input
               v-model="searchForm.keyword"
-              placeholder="搜索环境名称"
+              placeholder="搜索环境名称..."
               clearable
-              style="width: 200px"
+              class="search-input"
               @change="loadEnvironments"
             >
               <template #prefix>
                 <el-icon><Search /></el-icon>
               </template>
             </el-input>
-            <el-select v-model="searchForm.env_type" placeholder="环境类型" clearable @change="loadEnvironments">
-              <el-option label="开发环境" value="dev" />
-              <el-option label="测试环境" value="testing" />
-              <el-option label="预发布环境" value="staging" />
-              <el-option label="生产环境" value="production" />
-            </el-select>
             <el-button :icon="Search" @click="showAdvancedSearch = true">高级搜索</el-button>
             <div style="flex: 1"></div>
             <el-button type="primary" :icon="Plus" @click="handleCreateEnv">新建环境</el-button>
           </div>
 
-          <el-table :data="envList" style="width: 100%">
-            <el-table-column prop="env_code" label="编码" width="120" />
-            <el-table-column prop="name" label="环境名称" />
-            <el-table-column prop="env_type" label="类型" width="120">
+          <el-table :data="envList" class="page-table">
+            <el-table-column prop="env_code" label="编码" width="120" show-overflow-tooltip />
+            <el-table-column prop="name" label="环境名称" min-width="120" show-overflow-tooltip />
+            <el-table-column prop="env_type" label="类型" width="100">
               <template #default="{ row }">
                 <el-tag :type="getEnvTypeColor(row.env_type)">{{ getEnvTypeText(row.env_type) }}</el-tag>
               </template>
             </el-table-column>
-            <el-table-column prop="base_url" label="基础URL" show-overflow-tooltip />
+            <el-table-column prop="base_url" label="基础URL" min-width="200" show-overflow-tooltip />
             <el-table-column prop="status" label="状态" width="100">
               <template #default="{ row }">
                 <el-tag :type="row.status === 'active' ? 'success' : 'info'">
@@ -42,7 +36,7 @@
                 </el-tag>
               </template>
             </el-table-column>
-            <el-table-column prop="resources_count" label="资源数" width="100" />
+            <el-table-column prop="resources_count" label="资源数" width="100" show-overflow-tooltip />
             <el-table-column label="操作" width="140" fixed="right">
               <template #default="{ row }">
                 <el-tooltip content="资源" placement="top">
@@ -70,25 +64,20 @@
             <el-select v-model="resourceSearchForm.environment_id" placeholder="选择环境" clearable @change="loadResources">
               <el-option v-for="env in envList" :key="env.id" :label="env.name" :value="env.id" />
             </el-select>
-            <el-select v-model="resourceSearchForm.status" placeholder="状态" clearable @change="loadResources">
-              <el-option label="在线" value="online" />
-              <el-option label="离线" value="offline" />
-              <el-option label="忙碌" value="busy" />
-            </el-select>
             <div style="flex: 1"></div>
             <el-button type="primary" :icon="Plus" @click="handleCreateResource">新建资源</el-button>
           </div>
 
-          <el-table :data="resourceList" style="width: 100%">
-            <el-table-column prop="name" label="资源名称" />
+          <el-table :data="resourceList" class="page-table">
+            <el-table-column prop="name" label="资源名称" min-width="120" show-overflow-tooltip />
             <el-table-column prop="resource_type" label="类型" width="100">
               <template #default="{ row }">
                 <el-tag>{{ row.resource_type }}</el-tag>
               </template>
             </el-table-column>
-            <el-table-column prop="host" label="主机" />
-            <el-table-column prop="port" label="端口" width="80" />
-            <el-table-column prop="os_type" label="系统" width="100" />
+            <el-table-column prop="host" label="主机" min-width="150" show-overflow-tooltip />
+            <el-table-column prop="port" label="端口" width="80" show-overflow-tooltip />
+            <el-table-column prop="os_type" label="系统" width="100" show-overflow-tooltip />
             <el-table-column prop="status" label="状态" width="100">
               <template #default="{ row }">
                 <el-tag :type="getResourceStatusType(row.status)">
@@ -504,7 +493,20 @@ onMounted(() => {
 
 <style scoped>
 .environment-page {
-  padding: 0;
+  padding: var(--space-6);
+  height: 100%;
+  overflow-y: auto;
+}
+
+.environment-page :deep(.el-card) {
+  background: var(--color-surface);
+  border: none;
+  border-radius: var(--radius-lg);
+  box-shadow: none;
+}
+
+.environment-page :deep(.el-card__body) {
+  padding: var(--space-5);
 }
 
 .page-header {

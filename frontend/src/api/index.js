@@ -1,12 +1,16 @@
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
+import QS from 'qs'
 
 let errorMessageShown = false
 let redirecting = false
 
 const request = axios.create({
   baseURL: '/api',
-  timeout: 30000
+  timeout: 30000,
+  paramsSerializer: (params) => {
+    return QS.stringify(params, { arrayFormat: 'comma' })
+  }
 })
 
 // 请求拦截器

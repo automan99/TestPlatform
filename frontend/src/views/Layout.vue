@@ -153,26 +153,27 @@
             </el-dropdown>
           </div>
 
-          <!-- Theme Switcher -->
-          <ThemeSwitcher />
-
           <!-- User Menu -->
           <el-dropdown trigger="click" class="user-control">
             <div class="user-trigger">
               <div class="user-chip">
                 <el-icon><User /></el-icon>
               </div>
-              <span class="user-label">Admin</span>
+              <span class="user-label">{{ username }}</span>
             </div>
             <template #dropdown>
               <el-dropdown-menu class="precision-dropdown">
-                <el-dropdown-item>
+                <el-dropdown-item @click="router.push('/profile')">
                   <el-icon><User /></el-icon>
-                  <span class="dropdown-text">{{ t('common.edit') }} Profile</span>
+                  <span class="dropdown-text">{{ t('profile.title') }}</span>
+                </el-dropdown-item>
+                <el-dropdown-item @click="router.push('/settings')">
+                  <el-icon><Setting /></el-icon>
+                  <span class="dropdown-text">{{ t('settings.title') }}</span>
                 </el-dropdown-item>
                 <el-dropdown-item divided @click="handleLogout" class="dropdown-danger">
                   <el-icon><SwitchButton /></el-icon>
-                  <span class="dropdown-text">{{ t('common.back') }}</span>
+                  <span class="dropdown-text">{{ t('common.logout') }}</span>
                 </el-dropdown-item>
               </el-dropdown-menu>
             </template>
@@ -207,7 +208,6 @@ import {
   DataAnalysis, Setting, Expand, Fold, User, OfficeBuilding,
   ArrowDown, FolderOpened, SwitchButton
 } from '@element-plus/icons-vue'
-import ThemeSwitcher from '@/components/ThemeSwitcher.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -246,6 +246,8 @@ const currentTenantName = computed(() => tenantStore.currentTenant?.name || t('t
 const currentProjectId = computed(() => projectStore.currentProject?.id)
 const currentProjectName = computed(() => projectStore.currentProject?.name || 'Select Project')
 
+const username = computed(() => appStore.user?.real_name || appStore.user?.username || 'User')
+
 async function handleTenantSwitch(tenantId) {
   try {
     await tenantStore.setCurrentTenant(tenantId)
@@ -275,6 +277,18 @@ onMounted(async () => {
 
   const token = localStorage.getItem('token')
   if (!token) return
+
+  // 从 localStorage 加载用户信息到 store
+  if (!appStore.user) {
+    const savedUser = localStorage.getItem('user')
+    if (savedUser) {
+      try {
+        appStore.setUser(JSON.parse(savedUser))
+      } catch (e) {
+        console.error('Load user from localStorage failed:', e)
+      }
+    }
+  }
 
   try {
     await tenantStore.loadMyTenants()

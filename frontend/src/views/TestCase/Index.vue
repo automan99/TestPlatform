@@ -1,6 +1,6 @@
 <template>
   <div class="page-container">
-    <div class="page-layout" ref="layoutRef">
+    <div class="page-layout animate-fade-in-up" ref="layoutRef">
       <!-- Sidebar with Directory Tree -->
       <div class="page-sidebar suite-sidebar" :style="{ width: sidebarWidth + 'px' }">
         <div class="sidebar-header">
@@ -56,7 +56,7 @@
 
       <!-- Content Area -->
       <div class="content-area">
-        <el-card>
+        <div class="content-body">
           <!-- Toolbar -->
           <div class="toolbar">
             <div class="toolbar-left">
@@ -71,17 +71,6 @@
                   <el-icon><Search /></el-icon>
                 </template>
               </el-input>
-              <el-select v-model="searchForm.priority" :placeholder="t('testCase.priority')" clearable @change="loadCases">
-                <el-option :label="t('testCase.critical')" value="critical" />
-                <el-option :label="t('testCase.high')" value="high" />
-                <el-option :label="t('testCase.medium')" value="medium" />
-                <el-option :label="t('testCase.low')" value="low" />
-              </el-select>
-              <el-select v-model="searchForm.status" :placeholder="t('testCase.status')" clearable @change="loadCases">
-                <el-option :label="t('testCase.draft')" value="draft" />
-                <el-option :label="t('testCase.active')" value="active" />
-                <el-option :label="t('testCase.archived')" value="archived" />
-              </el-select>
               <el-button :icon="Search" @click="showAdvancedSearch = true">{{ t('common.advanced', '高级搜索') }}</el-button>
             </div>
             <div class="toolbar-right">
@@ -103,70 +92,72 @@
           </div>
 
           <!-- Table -->
-          <el-table
-            :data="caseList"
-            @selection-change="handleSelectionChange"
-            class="case-table"
-          >
-            <el-table-column type="selection" width="55" />
-            <el-table-column :label="t('testCase.caseNo')" width="120">
-              <template #default="{ row }">
-                {{ row.case_no || `CASE-${row.id}` }}
-              </template>
-            </el-table-column>
-            <el-table-column prop="name" :label="t('testCase.caseName')" show-overflow-tooltip />
-            <el-table-column prop="priority" :label="t('testCase.priority')" width="100">
-              <template #default="{ row }">
-                <el-tag :type="getPriorityType(row.priority)">{{ getPriorityText(row.priority) }}</el-tag>
-              </template>
-            </el-table-column>
-            <el-table-column prop="case_type" :label="t('testCase.type')" width="100">
-              <template #default="{ row }">
-                <el-tag type="info">{{ getCaseTypeText(row.case_type) }}</el-tag>
-              </template>
-            </el-table-column>
-            <el-table-column prop="automation_status" :label="t('testCase.automation')" width="110">
-              <template #default="{ row }">
-                <el-tag :type="row.automation_status === 'automated' ? 'success' : 'info'">
-                  {{ getAutomationText(row.automation_status) }}
-                </el-tag>
-              </template>
-            </el-table-column>
-            <el-table-column prop="status" :label="t('testCase.status')" width="100">
-              <template #default="{ row }">
-                <el-tag :type="getStatusType(row.status)">{{ getStatusText(row.status) }}</el-tag>
-              </template>
-            </el-table-column>
-            <el-table-column :label="t('common.operation')" width="200" fixed="right">
-              <template #default="{ row }">
-                <el-tooltip :content="t('testCase.viewCase', '查看用例')" placement="top">
-                  <el-button type="info" link size="small" @click="handleView(row)">
-                    <el-icon><View /></el-icon>
-                  </el-button>
-                </el-tooltip>
-                <el-tooltip :content="t('testCase.executeCase', '执行用例')" placement="top">
-                  <el-button type="success" link size="small" @click="handleExecute(row)">
-                    <el-icon><VideoPlay /></el-icon>
-                  </el-button>
-                </el-tooltip>
-                <el-tooltip content="AI执行" placement="top">
-                  <el-button type="warning" link size="small" @click="handleAIExecute(row)">
-                    <el-icon><MagicStick /></el-icon>
-                  </el-button>
-                </el-tooltip>
-                <el-tooltip :content="t('testCase.editCase', t('common.edit') + '用例')" placement="top">
-                  <el-button type="primary" link size="small" @click="handleEdit(row)">
-                    <el-icon><Edit /></el-icon>
-                  </el-button>
-                </el-tooltip>
-                <el-tooltip :content="t('common.delete')" placement="top">
-                  <el-button type="danger" link size="small" @click="handleDelete(row)">
-                    <el-icon><Delete /></el-icon>
-                  </el-button>
-                </el-tooltip>
-              </template>
-            </el-table-column>
-          </el-table>
+          <div class="page-table">
+            <el-table
+              :data="caseList"
+              @selection-change="handleSelectionChange"
+              class="page-table"
+            >
+              <el-table-column type="selection" width="55" />
+              <el-table-column :label="t('testCase.caseNo')" width="120" show-overflow-tooltip>
+                <template #default="{ row }">
+                  {{ row.case_no || `CASE-${row.id}` }}
+                </template>
+              </el-table-column>
+              <el-table-column prop="name" :label="t('testCase.caseName')" min-width="150" show-overflow-tooltip />
+              <el-table-column prop="priority" :label="t('testCase.priority')" width="100">
+                <template #default="{ row }">
+                  <el-tag :type="getPriorityType(row.priority)">{{ getPriorityText(row.priority) }}</el-tag>
+                </template>
+              </el-table-column>
+              <el-table-column prop="case_type" :label="t('testCase.type')" width="100">
+                <template #default="{ row }">
+                  <el-tag type="info">{{ getCaseTypeText(row.case_type) }}</el-tag>
+                </template>
+              </el-table-column>
+              <el-table-column prop="automation_status" :label="t('testCase.automation')" width="110">
+                <template #default="{ row }">
+                  <el-tag :type="row.automation_status === 'automated' ? 'success' : 'info'">
+                    {{ getAutomationText(row.automation_status) }}
+                  </el-tag>
+                </template>
+              </el-table-column>
+              <el-table-column prop="status" :label="t('testCase.status')" width="100">
+                <template #default="{ row }">
+                  <el-tag :type="getStatusType(row.status)">{{ getStatusText(row.status) }}</el-tag>
+                </template>
+              </el-table-column>
+              <el-table-column :label="t('common.operation')" width="200" fixed="right">
+                <template #default="{ row }">
+                  <el-tooltip :content="t('testCase.viewCase', '查看用例')" placement="top">
+                    <el-button type="info" link size="small" @click="handleView(row)">
+                      <el-icon><View /></el-icon>
+                    </el-button>
+                  </el-tooltip>
+                  <el-tooltip :content="t('testCase.executeCase', '执行用例')" placement="top">
+                    <el-button type="success" link size="small" @click="handleExecute(row)">
+                      <el-icon><VideoPlay /></el-icon>
+                    </el-button>
+                  </el-tooltip>
+                  <el-tooltip content="AI执行" placement="top">
+                    <el-button type="warning" link size="small" @click="handleAIExecute(row)">
+                      <el-icon><MagicStick /></el-icon>
+                    </el-button>
+                  </el-tooltip>
+                  <el-tooltip :content="t('testCase.editCase', t('common.edit') + '用例')" placement="top">
+                    <el-button type="primary" link size="small" @click="handleEdit(row)">
+                      <el-icon><Edit /></el-icon>
+                    </el-button>
+                  </el-tooltip>
+                  <el-tooltip :content="t('common.delete')" placement="top">
+                    <el-button type="danger" link size="small" @click="handleDelete(row)">
+                      <el-icon><Delete /></el-icon>
+                    </el-button>
+                  </el-tooltip>
+                </template>
+              </el-table-column>
+            </el-table>
+          </div>
 
           <!-- Pagination -->
           <div class="table-pagination">
@@ -180,7 +171,7 @@
               @size-change="loadCases"
             />
           </div>
-        </el-card>
+        </div>
       </div>
     </div>
 
@@ -710,6 +701,7 @@ const suiteOptions = ref([])
 const caseList = ref([])
 const selectedCases = ref([])
 const currentSuiteId = ref(null)
+const currentSuiteIds = ref([])
 
 const dialogVisible = ref(false)
 const dialogTitle = ref('')
@@ -875,7 +867,53 @@ async function loadSuites() {
     project_id: currentProjectId.value
   })
   suiteTree.value = res.data || []
+  // Calculate cumulative counts for parent nodes
+  calculateCumulativeCounts(suiteTree.value)
   suiteOptions.value = buildOptions(suiteTree.value)
+}
+
+// Calculate cumulative counts for parent nodes (including all children)
+function calculateCumulativeCounts(tree) {
+  for (const node of tree) {
+    if (node.children && node.children.length > 0) {
+      // First recursively calculate children counts
+      calculateCumulativeCounts(node.children)
+      // Sum up all children counts
+      node.case_count = node.children.reduce((sum, child) => sum + (child.case_count || 0), 0)
+    }
+  }
+}
+
+// Get all suite IDs including children
+function getAllSuiteIds(tree, targetId) {
+  const ids = []
+  const findAndCollect = (nodes, id) => {
+    for (const node of nodes) {
+      if (node.id === id) {
+        // Found target, collect this node and all children
+        collectAllIds(node, ids)
+        return true
+      }
+      if (node.children && node.children.length > 0) {
+        if (findAndCollect(node.children, id)) {
+          return true
+        }
+      }
+    }
+    return false
+  }
+
+  const collectAllIds = (node, collection) => {
+    collection.push(node.id)
+    if (node.children && node.children.length > 0) {
+      for (const child of node.children) {
+        collectAllIds(child, collection)
+      }
+    }
+  }
+
+  findAndCollect(tree, targetId)
+  return ids
 }
 
 function buildOptions(tree) {
@@ -893,6 +931,11 @@ function buildOptions(tree) {
 function handleNodeClick(data) {
   currentSuiteId.value = data.id
   testCaseStore.setCurrentSuite(data)
+  // Store all suite IDs including children for loading cases
+  const allIds = getAllSuiteIds(suiteTree.value, data.id)
+  // Only use multiple IDs if this node has children (more than 1 ID collected)
+  currentSuiteIds.value = allIds.length > 1 ? allIds : []
+  console.log('Clicked node ID:', data.id, 'All suite IDs:', allIds, 'Will use:', currentSuiteIds.value.length > 0 ? currentSuiteIds.value : [data.id])
   pagination.page = 1
   loadCases()
 }
@@ -977,8 +1020,20 @@ async function loadCases() {
   const params = {
     page: pagination.page,
     per_page: pagination.pageSize,
-    suite_id: currentSuiteId.value,
     project_id: currentProjectId.value
+  }
+
+  // Use all suite IDs if a parent is selected (includes children)
+  if (currentSuiteIds.value.length > 0) {
+    // Try passing as array - axios will serialize it
+    params.suite_ids = currentSuiteIds.value
+    console.log('Loading cases with suite_ids:', currentSuiteIds.value)
+  } else if (currentSuiteId.value !== null) {
+    // Single suite selected
+    params.suite_id = currentSuiteId.value
+    console.log('Loading cases with suite_id:', currentSuiteId.value)
+  } else {
+    console.log('Loading all cases (no suite filter)')
   }
 
   // Basic search: only search name
@@ -1004,8 +1059,15 @@ function handleAdvancedSearch() {
   const params = {
     page: 1,
     per_page: pagination.pageSize,
-    suite_id: currentSuiteId.value,
     project_id: currentProjectId.value
+  }
+
+  // Use all suite IDs if a parent is selected (includes children)
+  if (currentSuiteIds.value.length > 0) {
+    params.suite_ids = currentSuiteIds.value.join(',')
+  } else if (currentSuiteId.value !== null) {
+    // Single suite selected
+    params.suite_id = currentSuiteId.value
   }
 
   // Add advanced search conditions

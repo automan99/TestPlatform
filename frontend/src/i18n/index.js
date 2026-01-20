@@ -17,6 +17,7 @@ const messages = {
       reset: '重置',
       submit: '提交',
       back: '返回',
+      logout: '退出登录',
       loading: '加载中...',
       noData: '暂无数据',
       operation: '操作',
@@ -28,7 +29,9 @@ const messages = {
       advanced: '高级搜索',
       close: '关闭',
       required: '为必填项',
-      none: '无'
+      none: '无',
+      error: '操作失败',
+      keyword: '关键词'
     },
     // 菜单
     menu: {
@@ -54,7 +57,7 @@ const messages = {
     },
     // 测试用例
     testCase: {
-      title: '测试用例管理',
+      title: '用例',
       newFolder: '新建文件夹',
       newCase: '新建用例',
       folderName: '文件夹名称',
@@ -146,7 +149,7 @@ const messages = {
     },
     // 测试计划
     testPlan: {
-      title: '测试计划管理',
+      title: '计划',
       newPlan: '新建计划',
       planNo: '计划编号',
       planName: '计划名称',
@@ -235,7 +238,7 @@ const messages = {
     },
     // 缺陷管理
     defect: {
-      title: '缺陷管理',
+      title: '缺陷',
       modules: '模块',
       newModule: '新建模块',
       newSubModule: '新建子模块',
@@ -384,6 +387,73 @@ const messages = {
       backendTech: 'Flask + Flask-RESTX + SQLAlchemy',
       licenseType: 'MIT License'
     },
+    // 个人信息
+    profile: {
+      title: '个人信息',
+      basicInfo: '基本信息',
+      security: '安全设置',
+      activity: '活动记录',
+      preferences: '偏好设置',
+      enterRealName: '请输入真实姓名',
+      enterEmail: '请输入邮箱地址',
+      enterPhone: '请输入手机号码',
+      enterCurrentPassword: '请输入当前密码',
+      enterNewPassword: '请输入新密码',
+      confirmNewPassword: '请确认新密码',
+      updatePassword: '修改密码',
+      timezone: '时区',
+      language: '语言',
+      theme: '主题',
+      notifications: '邮件通知',
+      notificationsDesc: '接收邮件通知',
+      autoSave: '自动保存',
+      autoSaveDesc: '编辑时自动保存草稿',
+      itemsPerPage: '每页显示条数',
+      currentPassword: '当前密码',
+      newPassword: '新密码',
+      confirmPassword: '确认密码',
+      passwordTip: '密码要求',
+      requirement1: '密码长度至少 6 位',
+      requirement2: '包含字母和数字',
+      requirement3: '包含特殊字符',
+      passwordMismatch: '两次输入的密码不一致',
+      passwordTooShort: '密码长度不能少于 6 位',
+      invalidEmail: '请输入正确的邮箱地址',
+      invalidPhone: '请输入正确的手机号码',
+      loadFailed: '加载失败',
+      updateSuccess: '更新成功',
+      updateFailed: '更新失败',
+      passwordChangeSuccess: '密码修改成功',
+      passwordChangeFailed: '密码修改失败',
+      preferencesSaved: '偏好设置已保存',
+      noActivity: '暂无活动记录',
+      uploadImageOnly: '只能上传图片文件!',
+      uploadImageSize: '图片大小不能超过 2MB!',
+      avatarUploadSuccess: '头像上传成功',
+      avatarUploadFailed: '头像上传失败'
+    },
+    // 主题
+    theme: {
+      light: '浅色',
+      dark: '深色',
+      blue: '蓝色',
+      green: '绿色',
+      purple: '紫色'
+    },
+    // 用户
+    user: {
+      title: '用户管理',
+      username: '用户名',
+      realName: '真实姓名',
+      email: '邮箱',
+      phone: '手机号',
+      isAdmin: '管理员',
+      admin: '管理员',
+      member: '普通用户',
+      status: '状态',
+      active: '激活',
+      disabled: '禁用'
+    },
     // Tenant
     tenant: {
       title: '租户管理',
@@ -446,7 +516,32 @@ const messages = {
       deleteSuccess: '项目删除成功',
       switchSuccess: '项目切换成功',
       statistics: '项目统计',
-      recentExecutions: '最近执行'
+      recentExecutions: '最近执行',
+      // 新增
+      create: '新建项目',
+      edit: '编辑项目',
+      searchPlaceholder: '搜索项目名称...',
+      noProjects: '暂无项目',
+      noProjectsDesc: '点击下方按钮创建您的第一个项目',
+      enterName: '请输入项目名称',
+      enterCode: '请输入项目编码',
+      enterKey: '请输入项目标识',
+      selectType: '请选择项目类型',
+      selectStatus: '请选择状态',
+      enterDescription: '请输入项目描述',
+      enterUrl: '请输入项目地址',
+      enterRepository: '请输入代码仓库地址',
+      enterOwner: '请输入项目经理',
+      enterLead: '请输入技术负责人',
+      enterIcon: '请输入图标',
+      searchCode: '搜索项目编码',
+      searchName: '搜索项目名称',
+      searchKey: '搜索项目标识',
+      searchAll: '搜索所有字段',
+      nameRequired: '请输入项目名称',
+      codeRequired: '请输入项目编码',
+      typeRequired: '请选择项目类型',
+      statusRequired: '请选择状态'
     },
     // User
     user: {
@@ -485,6 +580,7 @@ const messages = {
       reset: 'Reset',
       submit: 'Submit',
       back: 'Back',
+      logout: 'Logout',
       loading: 'Loading...',
       noData: 'No data',
       operation: 'Operation',
@@ -496,7 +592,9 @@ const messages = {
       advanced: 'Advanced Search',
       close: 'Close',
       required: 'is required',
-      none: 'None'
+      none: 'None',
+      error: 'Operation failed',
+      keyword: 'Keyword'
     },
     // Menu
     menu: {
@@ -522,7 +620,7 @@ const messages = {
     },
     // Test Case
     testCase: {
-      title: 'Test Case Management',
+      title: 'Cases',
       newFolder: 'New Folder',
       newCase: 'New Case',
       folderName: 'Folder Name',
@@ -614,7 +712,7 @@ const messages = {
     },
     // Test Plan
     testPlan: {
-      title: 'Test Plan Management',
+      title: 'Plans',
       newPlan: 'New Plan',
       planNo: 'Plan No.',
       planName: 'Plan Name',
@@ -703,7 +801,7 @@ const messages = {
     },
     // Defect
     defect: {
-      title: 'Defect Management',
+      title: 'Defects',
       modules: 'Modules',
       newModule: 'New Module',
       newSubModule: 'New Sub-module',
@@ -852,6 +950,73 @@ const messages = {
       backendTech: 'Flask + Flask-RESTX + SQLAlchemy',
       licenseType: 'MIT License'
     },
+    // Profile
+    profile: {
+      title: 'Profile',
+      basicInfo: 'Basic Info',
+      security: 'Security',
+      activity: 'Activity',
+      preferences: 'Preferences',
+      enterRealName: 'Enter your real name',
+      enterEmail: 'Enter your email address',
+      enterPhone: 'Enter your phone number',
+      enterCurrentPassword: 'Enter your current password',
+      enterNewPassword: 'Enter your new password',
+      confirmNewPassword: 'Confirm your new password',
+      updatePassword: 'Update Password',
+      timezone: 'Timezone',
+      language: 'Language',
+      theme: 'Theme',
+      notifications: 'Email Notifications',
+      notificationsDesc: 'Receive email notifications',
+      autoSave: 'Auto Save',
+      autoSaveDesc: 'Auto save drafts when editing',
+      itemsPerPage: 'Items per page',
+      currentPassword: 'Current Password',
+      newPassword: 'New Password',
+      confirmPassword: 'Confirm Password',
+      passwordTip: 'Password Requirements',
+      requirement1: 'At least 6 characters long',
+      requirement2: 'Contains letters and numbers',
+      requirement3: 'Contains special characters',
+      passwordMismatch: 'Passwords do not match',
+      passwordTooShort: 'Password must be at least 6 characters long',
+      invalidEmail: 'Please enter a valid email address',
+      invalidPhone: 'Please enter a valid phone number',
+      loadFailed: 'Failed to load',
+      updateSuccess: 'Updated successfully',
+      updateFailed: 'Failed to update',
+      passwordChangeSuccess: 'Password changed successfully',
+      passwordChangeFailed: 'Failed to change password',
+      preferencesSaved: 'Preferences saved',
+      noActivity: 'No activity yet',
+      uploadImageOnly: 'Only image files are allowed!',
+      uploadImageSize: 'Image size cannot exceed 2MB!',
+      avatarUploadSuccess: 'Avatar uploaded successfully',
+      avatarUploadFailed: 'Failed to upload avatar'
+    },
+    // Theme
+    theme: {
+      light: 'Light',
+      dark: 'Dark',
+      blue: 'Blue',
+      green: 'Green',
+      purple: 'Purple'
+    },
+    // User
+    user: {
+      title: 'User Management',
+      username: 'Username',
+      realName: 'Real Name',
+      email: 'Email',
+      phone: 'Phone',
+      isAdmin: 'Administrator',
+      admin: 'Administrator',
+      member: 'Member',
+      status: 'Status',
+      active: 'Active',
+      disabled: 'Disabled'
+    },
     // Tenant
     tenant: {
       title: 'Tenant Management',
@@ -937,7 +1102,32 @@ const messages = {
       deleteSuccess: 'Project deleted successfully',
       switchSuccess: 'Project switched successfully',
       statistics: 'Statistics',
-      recentExecutions: 'Recent Executions'
+      recentExecutions: 'Recent Executions',
+      // New
+      create: 'New Project',
+      edit: 'Edit Project',
+      searchPlaceholder: 'Search project name...',
+      noProjects: 'No projects yet',
+      noProjectsDesc: 'Click the button below to create your first project',
+      enterName: 'Enter project name',
+      enterCode: 'Enter project code',
+      enterKey: 'Enter project key',
+      selectType: 'Select project type',
+      selectStatus: 'Select status',
+      enterDescription: 'Enter project description',
+      enterUrl: 'Enter project URL',
+      enterRepository: 'Enter repository URL',
+      enterOwner: 'Enter project owner',
+      enterLead: 'Enter tech lead',
+      enterIcon: 'Enter icon',
+      searchCode: 'Search project code',
+      searchName: 'Search project name',
+      searchKey: 'Search project key',
+      searchAll: 'Search all fields',
+      nameRequired: 'Please enter project name',
+      codeRequired: 'Please enter project code',
+      typeRequired: 'Please select project type',
+      statusRequired: 'Please select status'
     }
   }
 }

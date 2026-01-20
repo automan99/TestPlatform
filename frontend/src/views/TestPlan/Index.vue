@@ -1,6 +1,6 @@
 <template>
   <div class="page-container">
-    <div class="page-layout" ref="layoutRef">
+    <div class="page-layout animate-fade-in-up" ref="layoutRef">
       <!-- 左侧目录树 -->
       <div class="page-sidebar folder-sidebar" :style="{ width: sidebarWidth + 'px' }">
         <div class="sidebar-header">
@@ -55,95 +55,96 @@
 
       <!-- 右侧内容区 -->
       <div class="content-area">
-        <el-card>
+        <div class="content-body">
           <div class="toolbar">
             <el-input
               v-model="searchForm.keyword"
-              placeholder="搜索计划名称"
+              placeholder="搜索计划名称..."
               clearable
-              style="width: 200px"
+              class="search-input"
               @change="loadPlans"
             >
               <template #prefix>
                 <el-icon><Search /></el-icon>
               </template>
             </el-input>
-            <el-select v-model="searchForm.status" placeholder="状态" clearable @change="loadPlans">
-              <el-option label="草稿" value="draft" />
-              <el-option label="进行中" value="active" />
-              <el-option label="已完成" value="completed" />
-              <el-option label="已取消" value="cancelled" />
-            </el-select>
             <el-button :icon="Search" @click="showAdvancedSearch = true">高级搜索</el-button>
             <div style="flex: 1"></div>
             <el-button type="primary" :icon="Plus" @click="handleCreate">新建计划</el-button>
           </div>
 
-          <el-table :data="planList" style="width: 100%">
-            <el-table-column prop="plan_no" label="编号" width="120" />
-            <el-table-column prop="name" label="计划名称" show-overflow-tooltip />
-            <el-table-column prop="start_date" label="开始日期" width="120" />
-            <el-table-column prop="end_date" label="结束日期" width="120" />
-            <el-table-column prop="status" label="状态" width="100">
-              <template #default="{ row }">
-                <el-tag :type="getStatusType(row.status)">{{ getStatusText(row.status) }}</el-tag>
-              </template>
-            </el-table-column>
-            <el-table-column prop="progress" label="执行进度" width="180">
-              <template #default="{ row }">
-                <el-progress
-                  :percentage="row.progress?.progress || 0"
-                  :color="getProgressColor(row.progress?.progress || 0)"
-                />
-              </template>
-            </el-table-column>
-            <el-table-column prop="progress" label="用例数" width="100">
-              <template #default="{ row }">
-                {{ row.progress?.total || 0 }}
-              </template>
-            </el-table-column>
-            <el-table-column label="操作" width="260" fixed="right">
-              <template #default="{ row }">
-                <el-tooltip content="添加用例" placement="top">
-                  <el-button type="primary" link size="small" @click="handleView(row)">
-                    <el-icon><Plus /></el-icon>
-                  </el-button>
-                </el-tooltip>
-                <el-tooltip content="编辑" placement="top">
-                  <el-button type="primary" link size="small" @click="handleEdit(row)">
-                    <el-icon><Edit /></el-icon>
-                  </el-button>
-                </el-tooltip>
-                <el-tooltip content="手工执行" placement="top">
-                  <el-button type="success" link size="small" @click="handleManualExecute(row)">
-                    <el-icon><VideoPlay /></el-icon>
-                  </el-button>
-                </el-tooltip>
-                <el-tooltip content="AI执行" placement="top">
-                  <el-button type="warning" link size="small" @click="handleAIExecute(row)">
-                    <el-icon><MagicStick /></el-icon>
-                  </el-button>
-                </el-tooltip>
-                <el-tooltip content="删除" placement="top">
-                  <el-button type="danger" link size="small" @click="handleDelete(row)">
-                    <el-icon><Delete /></el-icon>
-                  </el-button>
-                </el-tooltip>
-              </template>
-            </el-table-column>
-          </el-table>
+          <div class="page-table">
+            <el-table :data="planList" class="page-table">
+              <el-table-column label="编号" width="120" show-overflow-tooltip>
+                <template #default="{ row }">
+                  {{ row.plan_no || `TP-${row.id}` }}
+                </template>
+              </el-table-column>
+              <el-table-column prop="name" label="计划名称" min-width="150" show-overflow-tooltip />
+              <el-table-column prop="start_date" label="开始日期" width="120" show-overflow-tooltip />
+              <el-table-column prop="end_date" label="结束日期" width="120" show-overflow-tooltip />
+              <el-table-column prop="status" label="状态" width="100">
+                <template #default="{ row }">
+                  <el-tag :type="getStatusType(row.status)">{{ getStatusText(row.status) }}</el-tag>
+                </template>
+              </el-table-column>
+              <el-table-column prop="progress" label="执行进度" width="180">
+                <template #default="{ row }">
+                  <el-progress
+                    :percentage="row.progress?.progress || 0"
+                    :color="getProgressColor(row.progress?.progress || 0)"
+                  />
+                </template>
+              </el-table-column>
+              <el-table-column prop="progress" label="用例数" width="100">
+                <template #default="{ row }">
+                  {{ row.progress?.total || 0 }}
+                </template>
+              </el-table-column>
+              <el-table-column label="操作" width="260" fixed="right">
+                <template #default="{ row }">
+                  <el-tooltip content="添加用例" placement="top">
+                    <el-button type="primary" link size="small" @click="handleView(row)">
+                      <el-icon><Plus /></el-icon>
+                    </el-button>
+                  </el-tooltip>
+                  <el-tooltip content="编辑" placement="top">
+                    <el-button type="primary" link size="small" @click="handleEdit(row)">
+                      <el-icon><Edit /></el-icon>
+                    </el-button>
+                  </el-tooltip>
+                  <el-tooltip content="手工执行" placement="top">
+                    <el-button type="success" link size="small" @click="handleManualExecute(row)">
+                      <el-icon><VideoPlay /></el-icon>
+                    </el-button>
+                  </el-tooltip>
+                  <el-tooltip content="AI执行" placement="top">
+                    <el-button type="warning" link size="small" @click="handleAIExecute(row)">
+                      <el-icon><MagicStick /></el-icon>
+                    </el-button>
+                  </el-tooltip>
+                  <el-tooltip content="删除" placement="top">
+                    <el-button type="danger" link size="small" @click="handleDelete(row)">
+                      <el-icon><Delete /></el-icon>
+                    </el-button>
+                  </el-tooltip>
+                </template>
+              </el-table-column>
+            </el-table>
+          </div>
 
-          <el-pagination
-            v-model:current-page="pagination.page"
-            v-model:page-size="pagination.pageSize"
-            :total="pagination.total"
-            :page-sizes="[10, 20, 50, 100]"
-            layout="total, sizes, prev, pager, next, jumper"
-            @current-change="loadPlans"
-            @size-change="loadPlans"
-            style="margin-top: 20px; justify-content: flex-end"
-          />
-        </el-card>
+          <div class="table-pagination">
+            <el-pagination
+              v-model:current-page="pagination.page"
+              v-model:page-size="pagination.pageSize"
+              :total="pagination.total"
+              :page-sizes="[10, 20, 50, 100]"
+              layout="total, sizes, prev, pager, next, jumper"
+              @current-change="loadPlans"
+              @size-change="loadPlans"
+            />
+          </div>
+        </div>
       </div>
     </div>
 
@@ -430,6 +431,7 @@ const currentFolderId = ref(null)
 
 const planList = ref([])
 const folderTree = ref([])
+const currentFolderIds = ref([])
 const folderTreeForSelect = computed(() => {
   // 添加一个"无目录"选项
   return [{ id: 0, name: '无目录', children: [] }, ...folderTree.value]
@@ -532,8 +534,24 @@ async function loadPlans() {
   const params = {
     page: pagination.page,
     per_page: pagination.pageSize,
-    project_id: currentProjectId.value,
-    folder_id: currentFolderId.value === 0 ? null : currentFolderId.value
+    project_id: currentProjectId.value
+  }
+
+  // Use all folder IDs if a parent is selected (includes children)
+  if (currentFolderIds.value.length > 0) {
+    // Try passing as array - axios will serialize it
+    params.folder_ids = currentFolderIds.value
+    console.log('Loading plans with folder_ids:', currentFolderIds.value)
+  } else if (currentFolderId.value === 0) {
+    // No folder selected
+    params.folder_id = null
+    console.log('Loading plans with no folder')
+  } else if (currentFolderId.value !== null) {
+    // Single folder selected
+    params.folder_id = currentFolderId.value
+    console.log('Loading plans with folder_id:', currentFolderId.value)
+  } else {
+    console.log('Loading all plans (no folder filter)')
   }
 
   // 基本搜索：只搜索名称
@@ -555,8 +573,16 @@ function handleAdvancedSearch() {
   const params = {
     page: 1,
     per_page: pagination.pageSize,
-    project_id: currentProjectId.value,
-    folder_id: currentFolderId.value === 0 ? null : currentFolderId.value
+    project_id: currentProjectId.value
+  }
+
+  // Use all folder IDs if a parent is selected (includes children)
+  if (currentFolderIds.value.length > 0) {
+    params.folder_ids = currentFolderIds.value
+  } else if (currentFolderId.value === 0) {
+    params.folder_id = null
+  } else if (currentFolderId.value !== null) {
+    params.folder_id = currentFolderId.value
   }
 
   // 添加高级搜索条件
@@ -607,9 +633,55 @@ async function loadFolderTree() {
       project_id: currentProjectId.value
     })
     folderTree.value = res.data || []
+    // Calculate cumulative counts for parent nodes
+    calculateCumulativeCounts(folderTree.value)
   } catch (error) {
     console.error('加载目录树失败:', error)
   }
+}
+
+// Calculate cumulative counts for parent nodes (including all children)
+function calculateCumulativeCounts(tree) {
+  for (const node of tree) {
+    if (node.children && node.children.length > 0) {
+      // First recursively calculate children counts
+      calculateCumulativeCounts(node.children)
+      // Sum up all children counts
+      node.plan_count = node.children.reduce((sum, child) => sum + (child.plan_count || 0), 0)
+    }
+  }
+}
+
+// Get all folder IDs including children
+function getAllFolderIds(tree, targetId) {
+  const ids = []
+  const findAndCollect = (nodes, id) => {
+    for (const node of nodes) {
+      if (node.id === id) {
+        // Found target, collect this node and all children
+        collectAllIds(node, ids)
+        return true
+      }
+      if (node.children && node.children.length > 0) {
+        if (findAndCollect(node.children, id)) {
+          return true
+        }
+      }
+    }
+    return false
+  }
+
+  const collectAllIds = (node, collection) => {
+    collection.push(node.id)
+    if (node.children && node.children.length > 0) {
+      for (const child of node.children) {
+        collectAllIds(child, collection)
+      }
+    }
+  }
+
+  findAndCollect(tree, targetId)
+  return ids
 }
 
 // 加载用户列表
@@ -625,6 +697,15 @@ async function loadUsers() {
 // 目录点击事件
 function handleFolderClick(data) {
   currentFolderId.value = data.id === 'all' ? null : data.id
+  // Store all folder IDs including children for loading plans
+  if (data.id !== 'all' && data.id !== null) {
+    const allIds = getAllFolderIds(folderTree.value, data.id)
+    // Only use multiple IDs if this node has children (more than 1 ID collected)
+    currentFolderIds.value = allIds.length > 1 ? allIds : []
+    console.log('Clicked folder ID:', data.id, 'All folder IDs:', allIds, 'Will use:', currentFolderIds.value.length > 0 ? currentFolderIds.value : [data.id])
+  } else {
+    currentFolderIds.value = []
+  }
   pagination.page = 1
   loadPlans()
 }
@@ -817,10 +898,10 @@ function handleDelete(row) {
 function handleSubmit() {
   formRef.value.validate((valid) => {
     if (valid) {
-      // 处理空字符串字段，转换为 null
+      // 处理空字符串字段，转换为 null (plan_no除外，后端需要空字符串来触发自动生成)
       const data = {
         name: form.name,
-        plan_no: form.plan_no || null,
+        plan_no: form.plan_no || '',
         build_version: form.build_version || null,
         folder_id: form.folder_id || null,
         start_date: form.start_date ? new Date(form.start_date).toISOString().split('T')[0] : null,

@@ -1,30 +1,31 @@
 <template>
   <div class="report-page">
-    <el-card>
+    <div class="main-content animate-fade-in-up">
       <el-tabs v-model="activeTab" class="report-tabs">
-        <el-tab-pane label="报告列表" name="list">
-          <div class="toolbar">
-            <el-input v-model="searchForm.keyword" placeholder="搜索报告" clearable style="width: 200px" @change="loadReports" />
-            <el-select v-model="searchForm.report_type" placeholder="报告类型" clearable @change="loadReports">
-              <el-option label="执行报告" value="execution" />
-              <el-option label="汇总报告" value="summary" />
-              <el-option label="趋势报告" value="trend" />
-            </el-select>
-            <div style="flex: 1"></div>
-            <el-button type="primary" :icon="Plus" @click="handleCreate">生成报告</el-button>
-          </div>
+      <el-tab-pane label="报告列表" name="list">
+        <div class="toolbar">
+          <el-input v-model="searchForm.keyword" placeholder="搜索报告..." clearable class="search-input" @change="loadReports">
+            <template #prefix>
+              <el-icon><Search /></el-icon>
+            </template>
+          </el-input>
+          <el-button :icon="Search" @click="showAdvancedSearch = true">高级搜索</el-button>
+          <div style="flex: 1"></div>
+          <el-button type="primary" :icon="Plus" @click="handleCreate">生成报告</el-button>
+        </div>
 
-          <el-table :data="reportList" style="width: 100%">
-            <el-table-column prop="report_no" label="编号" width="120" />
-            <el-table-column prop="name" label="报告名称" show-overflow-tooltip />
-            <el-table-column prop="report_type" label="类型" width="120">
+        <div class="page-table">
+          <el-table :data="reportList" class="page-table">
+            <el-table-column prop="report_no" label="编号" width="120" show-overflow-tooltip />
+            <el-table-column prop="name" label="报告名称" min-width="150" show-overflow-tooltip />
+            <el-table-column prop="report_type" label="类型" width="100">
               <template #default="{ row }">
                 <el-tag>{{ getReportTypeText(row.report_type) }}</el-tag>
               </template>
             </el-table-column>
-            <el-table-column prop="start_time" label="开始时间" width="160" />
-            <el-table-column prop="end_time" label="结束时间" width="160" />
-            <el-table-column prop="total_cases" label="用例数" width="100" />
+            <el-table-column prop="start_time" label="开始时间" width="160" show-overflow-tooltip />
+            <el-table-column prop="end_time" label="结束时间" width="160" show-overflow-tooltip />
+            <el-table-column prop="total_cases" label="用例数" width="100" show-overflow-tooltip />
             <el-table-column prop="pass_rate" label="通过率" width="120">
               <template #default="{ row }">
                 <el-progress :percentage="row.pass_rate || 0" :color="getPassRateColor(row.pass_rate)" />
@@ -50,7 +51,9 @@
               </template>
             </el-table-column>
           </el-table>
+        </div>
 
+        <div class="table-pagination">
           <el-pagination
             v-model:current-page="pagination.page"
             v-model:page-size="pagination.pageSize"
@@ -59,54 +62,53 @@
             layout="total, sizes, prev, pager, next, jumper"
             @current-change="loadReports"
             @size-change="loadReports"
-            style="margin-top: 20px; justify-content: flex-end"
           />
-        </el-tab-pane>
+        </div>
+      </el-tab-pane>
 
-        <el-tab-pane label="统计概览" name="statistics">
-          <el-row :gutter="20">
-            <el-col :span="12">
-              <el-card>
-                <template #header>
-                  <span>用例执行分布</span>
-                </template>
-                <div ref="pieChartRef" style="height: 300px"></div>
-              </el-card>
-            </el-col>
-            <el-col :span="12">
-              <el-card>
-                <template #header>
-                  <span>缺陷严重程度分布</span>
-                </template>
-                <div ref="barChartRef" style="height: 300px"></div>
-              </el-card>
-            </el-col>
-          </el-row>
-          <el-row :gutter="20" style="margin-top: 20px">
-            <el-col :span="24">
-              <el-card>
-                <template #header>
-                  <span>测试趋势</span>
-                </template>
-                <div ref="lineChartRef" style="height: 300px"></div>
-              </el-card>
-            </el-col>
-          </el-row>
-        </el-tab-pane>
-
-        <el-tab-pane label="报告模板" name="templates">
-          <div class="toolbar">
-            <div style="flex: 1"></div>
-            <el-button type="primary" :icon="Plus" @click="handleCreateTemplate">新建模板</el-button>
+      <el-tab-pane label="统计概览" name="statistics">
+        <div class="charts-grid">
+          <div class="chart-card">
+            <div class="card-header">
+              <h3 class="card-title">用例执行分布</h3>
+            </div>
+            <div class="chart-container">
+              <div ref="pieChartRef"></div>
+            </div>
           </div>
-          <el-table :data="templateList" style="width: 100%">
-            <el-table-column prop="name" label="模板名称" />
-            <el-table-column prop="report_type" label="类型" width="120">
+          <div class="chart-card">
+            <div class="card-header">
+              <h3 class="card-title">缺陷严重程度分布</h3>
+            </div>
+            <div class="chart-container">
+              <div ref="barChartRef"></div>
+            </div>
+          </div>
+        </div>
+        <div class="chart-card chart-card-full">
+          <div class="card-header">
+            <h3 class="card-title">测试趋势</h3>
+          </div>
+          <div class="chart-container">
+            <div ref="lineChartRef"></div>
+          </div>
+        </div>
+      </el-tab-pane>
+
+      <el-tab-pane label="报告模板" name="templates">
+        <div class="toolbar">
+          <div style="flex: 1"></div>
+          <el-button type="primary" :icon="Plus" @click="handleCreateTemplate">新建模板</el-button>
+        </div>
+        <div class="page-table">
+          <el-table :data="templateList" class="page-table">
+            <el-table-column prop="name" label="模板名称" min-width="150" show-overflow-tooltip />
+            <el-table-column prop="report_type" label="类型" width="100">
               <template #default="{ row }">
                 <el-tag>{{ getReportTypeText(row.report_type) }}</el-tag>
               </template>
             </el-table-column>
-            <el-table-column prop="created_at" label="创建时间" width="180" />
+            <el-table-column prop="created_at" label="创建时间" width="180" show-overflow-tooltip />
             <el-table-column label="操作" width="100" fixed="right">
               <template #default="{ row }">
                 <el-tooltip content="编辑" placement="top">
@@ -122,9 +124,10 @@
               </template>
             </el-table-column>
           </el-table>
-        </el-tab-pane>
-      </el-tabs>
-    </el-card>
+        </div>
+      </el-tab-pane>
+    </el-tabs>
+    </div>
 
     <!-- 创建报告对话框 -->
     <el-dialog v-model="dialogVisible" title="生成测试报告" width="600px" destroy-on-close>
@@ -194,7 +197,7 @@
 <script setup>
 import { ref, reactive, onMounted, nextTick } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { View, Download, Edit, Delete, Plus } from '@element-plus/icons-vue'
+import { View, Download, Edit, Delete, Plus, Search } from '@element-plus/icons-vue'
 import * as echarts from 'echarts'
 import { reportApi } from '@/api/report'
 import { testPlanApi } from '@/api/test-plan'
@@ -203,6 +206,7 @@ const activeTab = ref('list')
 const reportList = ref([])
 const templateList = ref([])
 const planList = ref([])
+const showAdvancedSearch = ref(false)
 
 const dialogVisible = ref(false)
 const detailDialogVisible = ref(false)
@@ -332,7 +336,7 @@ function initCharts() {
     legend: { orient: 'vertical', left: 'left' },
     series: [{
       type: 'pie',
-      radius: '50%',
+      radius: ['45%', '70%'],
       data: [
         { value: 335, name: '通过', itemStyle: { color: colorSuccess } },
         { value: 234, name: '失败', itemStyle: { color: colorError } },
@@ -353,6 +357,7 @@ function initCharts() {
   const barChart = echarts.init(barChartRef.value)
   barChart.setOption({
     tooltip: { trigger: 'axis' },
+    grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
     xAxis: { type: 'category', data: ['紧急', '高', '中', '低', '轻微'] },
     yAxis: { type: 'value' },
     series: [{
@@ -366,6 +371,7 @@ function initCharts() {
   const lineChart = echarts.init(lineChartRef.value)
   lineChart.setOption({
     tooltip: { trigger: 'axis' },
+    grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
     xAxis: { type: 'category', data: ['周一', '周二', '周三', '周四', '周五', '周六', '周日'] },
     yAxis: { type: 'value' },
     series: [
@@ -387,27 +393,105 @@ onMounted(() => {
 
 <style scoped>
 .report-page {
-  padding: 0;
+  height: 100%;
+  padding: var(--space-6);
+  overflow-y: auto;
 }
 
-.page-header {
+.main-content {
+  height: 100%;
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  flex-direction: column;
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  padding: var(--space-5);
 }
 
-.header-actions {
-  display: flex;
-  gap: var(--space-2);
+.report-page :deep(.el-card) {
+  background: var(--color-surface);
+  border: none;
+  border-radius: var(--radius-lg);
+  box-shadow: none;
 }
 
-.toolbar {
-  display: flex;
-  gap: var(--space-3);
-  margin-bottom: var(--space-4);
+.report-tabs :deep(.el-tabs__header) {
+  margin: 0 0 var(--space-4) 0;
 }
 
 .report-tabs :deep(.el-tabs__content) {
-  padding-top: var(--space-5);
+  flex: 1;
+  overflow-y: auto;
+}
+
+/* Charts grid */
+.charts-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-4);
+  margin-bottom: var(--space-4);
+}
+
+/* Override toolbar padding for inside main-content */
+.main-content .toolbar {
+  padding: 0 0 var(--space-4) 0;
+}
+
+.main-content .page-table {
+  padding: 0;
+}
+
+.main-content .table-pagination {
+  padding: var(--space-4) 0 0 0;
+}
+
+.chart-card {
+  background: var(--color-bg-alt);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+}
+
+.chart-card-full {
+  grid-column: 1 / -1;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-4);
+}
+
+.card-title {
+  font-size: var(--text-md);
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0;
+}
+
+.chart-container {
+  height: 300px;
+}
+
+.chart-container > div {
+  width: 100%;
+  height: 100%;
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+  .charts-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .report-page {
+    padding: var(--space-3);
+  }
+
+  .toolbar {
+    flex-wrap: wrap;
+  }
 }
 </style>

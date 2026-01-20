@@ -1,6 +1,6 @@
 <template>
   <div class="page-container">
-    <div class="page-layout" ref="layoutRef">
+    <div class="page-layout animate-fade-in-up" ref="layoutRef">
       <!-- Sidebar with Module Tree -->
       <div class="page-sidebar module-sidebar" :style="{ width: sidebarWidth + 'px' }">
         <div class="sidebar-header">
@@ -56,7 +56,7 @@
 
       <!-- Content Area -->
       <div class="content-area">
-        <el-card>
+        <div class="content-body">
           <!-- Toolbar -->
           <div class="toolbar">
             <div class="toolbar-left">
@@ -71,25 +71,6 @@
                   <el-icon><Search /></el-icon>
                 </template>
               </el-input>
-              <el-select v-model="searchForm.severity" :placeholder="t('defect.severity')" clearable @change="loadDefects">
-                <el-option :label="t('defect.critical')" value="critical" />
-                <el-option :label="t('defect.high')" value="high" />
-                <el-option :label="t('defect.medium')" value="medium" />
-                <el-option :label="t('defect.low')" value="low" />
-              </el-select>
-              <el-select v-model="searchForm.priority" :placeholder="t('defect.priority')" clearable @change="loadDefects">
-                <el-option :label="t('defect.urgent')" value="urgent" />
-                <el-option :label="t('defect.high')" value="high" />
-                <el-option :label="t('defect.medium')" value="medium" />
-                <el-option :label="t('defect.low')" value="low" />
-              </el-select>
-              <el-select v-model="searchForm.status" :placeholder="t('defect.status')" clearable @change="loadDefects">
-                <el-option :label="t('defect.new')" value="new" />
-                <el-option :label="t('defect.assigned')" value="assigned" />
-                <el-option :label="t('defect.inProgress')" value="in_progress" />
-                <el-option :label="t('defect.resolved')" value="resolved" />
-                <el-option :label="t('defect.closed')" value="closed" />
-              </el-select>
               <el-button :icon="Search" @click="showAdvancedSearch = true">{{ t('defect.advancedSearch') }}</el-button>
             </div>
             <div class="toolbar-right">
@@ -98,40 +79,42 @@
           </div>
 
           <!-- Table -->
-          <el-table :data="defectList" class="defect-table">
-            <el-table-column prop="defect_no" :label="t('defect.defectNo')" width="120" />
-            <el-table-column prop="title" :label="t('defect.title')" show-overflow-tooltip />
-            <el-table-column prop="severity" :label="t('defect.severity')" width="100">
-              <template #default="{ row }">
-                <el-tag :type="getSeverityType(row.severity)">{{ getSeverityText(row.severity) }}</el-tag>
-              </template>
-            </el-table-column>
-            <el-table-column prop="priority" :label="t('defect.priority')" width="100">
-              <template #default="{ row }">
-                <el-tag :type="getPriorityType(row.priority)">{{ getPriorityText(row.priority) }}</el-tag>
-              </template>
-            </el-table-column>
-            <el-table-column prop="status" :label="t('defect.status')" width="100">
-              <template #default="{ row }">
-                <el-tag :type="getStatusType(row.status)">{{ getStatusText(row.status) }}</el-tag>
-              </template>
-            </el-table-column>
-            <el-table-column prop="assigned_to" :label="t('defect.assignedTo')" width="120" />
-            <el-table-column prop="reported_date" :label="t('defect.reportedDate')" width="120" />
-            <el-table-column :label="t('defect.actions')" width="140" fixed="right">
-              <template #default="{ row }">
-                <el-button type="info" link size="small" @click="handleView(row)">
-                  <el-icon><View /></el-icon>
-                </el-button>
-                <el-button type="primary" link size="small" @click="handleEdit(row)">
-                  <el-icon><Edit /></el-icon>
-                </el-button>
-                <el-button type="danger" link size="small" @click="handleDelete(row)">
-                  <el-icon><Delete /></el-icon>
-                </el-button>
-              </template>
-            </el-table-column>
-          </el-table>
+          <div class="page-table">
+            <el-table :data="defectList" class="page-table">
+              <el-table-column prop="defect_no" :label="t('defect.defectNo')" width="120" show-overflow-tooltip />
+              <el-table-column prop="title" :label="t('defect.title')" min-width="150" show-overflow-tooltip />
+              <el-table-column prop="severity" :label="t('defect.severity')" width="100">
+                <template #default="{ row }">
+                  <el-tag :type="getSeverityType(row.severity)">{{ getSeverityText(row.severity) }}</el-tag>
+                </template>
+              </el-table-column>
+              <el-table-column prop="priority" :label="t('defect.priority')" width="100">
+                <template #default="{ row }">
+                  <el-tag :type="getPriorityType(row.priority)">{{ getPriorityText(row.priority) }}</el-tag>
+                </template>
+              </el-table-column>
+              <el-table-column prop="status" :label="t('defect.status')" width="100">
+                <template #default="{ row }">
+                  <el-tag :type="getStatusType(row.status)">{{ getStatusText(row.status) }}</el-tag>
+                </template>
+              </el-table-column>
+              <el-table-column prop="assigned_to" :label="t('defect.assignedTo')" width="120" show-overflow-tooltip />
+              <el-table-column prop="reported_date" :label="t('defect.reportedDate')" width="160" show-overflow-tooltip />
+              <el-table-column :label="t('defect.actions')" width="140" fixed="right">
+                <template #default="{ row }">
+                  <el-button type="info" link size="small" @click="handleView(row)">
+                    <el-icon><View /></el-icon>
+                  </el-button>
+                  <el-button type="primary" link size="small" @click="handleEdit(row)">
+                    <el-icon><Edit /></el-icon>
+                  </el-button>
+                  <el-button type="danger" link size="small" @click="handleDelete(row)">
+                    <el-icon><Delete /></el-icon>
+                  </el-button>
+                </template>
+              </el-table-column>
+            </el-table>
+          </div>
 
           <!-- Pagination -->
           <div class="table-pagination">
@@ -145,7 +128,7 @@
               @size-change="loadDefects"
             />
           </div>
-        </el-card>
+        </div>
       </div>
     </div>
 
@@ -184,7 +167,7 @@
             v-model="form.module_id"
             :data="moduleOptions"
             :props="{ value: 'id', label: 'name', children: 'children' }"
-            :placeholder="t('defect.selectParentModule')"
+            :placeholder="t('defect.selectModule', '选择模块')"
             clearable
             check-strictly
             style="width: 100%"
@@ -450,6 +433,7 @@ const moduleDialogVisible = ref(false)
 const moduleDialogTitle = ref('')
 const isModuleEdit = ref(false)
 const selectedModuleId = ref(null)
+const currentModuleIds = ref([])
 
 const treeProps = {
   children: 'children',
@@ -619,12 +603,65 @@ async function loadModules() {
   if (!currentProjectId.value) return
   const res = await defectApi.getModules(currentProjectId.value)
   moduleTree.value = res.data || []
+  // Calculate cumulative counts for parent nodes
+  calculateCumulativeCounts(moduleTree.value)
   moduleOptions.value = buildOptions(moduleTree.value)
+}
+
+// Calculate cumulative counts for parent nodes (including all children)
+function calculateCumulativeCounts(tree) {
+  for (const node of tree) {
+    if (node.children && node.children.length > 0) {
+      // First recursively calculate children counts
+      calculateCumulativeCounts(node.children)
+      // Sum up all children counts
+      node.defect_count = node.children.reduce((sum, child) => sum + (child.defect_count || 0), 0)
+    }
+  }
+}
+
+// Get all module IDs including children
+function getAllModuleIds(tree, targetId) {
+  const ids = []
+  const findAndCollect = (nodes, id) => {
+    for (const node of nodes) {
+      if (node.id === id) {
+        // Found target, collect this node and all children
+        collectAllIds(node, ids)
+        return true
+      }
+      if (node.children && node.children.length > 0) {
+        if (findAndCollect(node.children, id)) {
+          return true
+        }
+      }
+    }
+    return false
+  }
+
+  const collectAllIds = (node, collection) => {
+    collection.push(node.id)
+    if (node.children && node.children.length > 0) {
+      for (const child of node.children) {
+        collectAllIds(child, collection)
+      }
+    }
+  }
+
+  findAndCollect(tree, targetId)
+  return ids
 }
 
 function handleNodeClick(data) {
   selectedModuleId.value = data.id
+  // Store all module IDs including children for loading defects
+  const allIds = getAllModuleIds(moduleTree.value, data.id)
+  // Only use multiple IDs if this node has children (more than 1 ID collected)
+  currentModuleIds.value = allIds.length > 1 ? allIds : []
+  // Also update searchForm.module_id for single selection
   searchForm.module_id = data.id
+  console.log('Clicked module ID:', data.id, 'All module IDs:', allIds, 'Will use:', currentModuleIds.value.length > 0 ? currentModuleIds.value : [data.id])
+  pagination.page = 1
   loadDefects()
 }
 
@@ -673,8 +710,20 @@ async function loadDefects() {
   const params = {
     page: pagination.page,
     per_page: pagination.pageSize,
-    project_id: currentProjectId.value,
-    module_id: searchForm.module_id
+    project_id: currentProjectId.value
+  }
+
+  // Use all module IDs if a parent is selected (includes children)
+  if (currentModuleIds.value.length > 0) {
+    // Try passing as array - axios will serialize it
+    params.module_ids = currentModuleIds.value
+    console.log('Loading defects with module_ids:', currentModuleIds.value)
+  } else if (searchForm.module_id !== null) {
+    // Single module selected
+    params.module_id = searchForm.module_id
+    console.log('Loading defects with module_id:', searchForm.module_id)
+  } else {
+    console.log('Loading all defects (no module filter)')
   }
 
   // Basic search: only search title
@@ -702,8 +751,14 @@ function handleAdvancedSearch() {
   const params = {
     page: 1,
     per_page: pagination.pageSize,
-    project_id: currentProjectId.value,
-    module_id: searchForm.module_id
+    project_id: currentProjectId.value
+  }
+
+  // Use all module IDs if a parent is selected (includes children)
+  if (currentModuleIds.value.length > 0) {
+    params.module_ids = currentModuleIds.value
+  } else if (searchForm.module_id !== null) {
+    params.module_id = searchForm.module_id
   }
 
   // Add advanced search conditions

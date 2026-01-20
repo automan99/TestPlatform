@@ -8,6 +8,9 @@ export const userApi = {
   // 获取用户详情
   getDetail: (id) => request.get(`/users/${id}`),
 
+  // 获取用户统计数据
+  getStats: (id) => request.get(`/users/${id}/stats`),
+
   // 创建用户
   create: (data) => request.post('/users', data),
 
@@ -18,5 +21,16 @@ export const userApi = {
   delete: (id) => request.delete(`/users/${id}`),
 
   // 重置密码
-  resetPassword: (id) => request.post(`/users/${id}/reset-password`)
+  resetPassword: (id) => request.post(`/users/${id}/reset-password`),
+
+  // 上传头像
+  uploadAvatar: (id, file) => {
+    const formData = new FormData()
+    formData.append('file', file)
+    return request.post(`/users/${id}/avatar`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    })
+  }
 }

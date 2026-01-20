@@ -80,9 +80,11 @@ import { ElMessage } from 'element-plus'
 import { Monitor, OfficeBuilding, Check } from '@element-plus/icons-vue'
 import { authApi } from '@/api/auth'
 import { useTenantStore } from '@/store/tenant'
+import { useAppStore } from '@/store'
 
 const router = useRouter()
 const tenantStore = useTenantStore()
+const appStore = useAppStore()
 const formRef = ref()
 const loading = ref(false)
 const step = ref(1)
@@ -115,6 +117,9 @@ async function handleLogin() {
         // 保存token和用户信息
         localStorage.setItem('token', token)
         localStorage.setItem('user', JSON.stringify(user))
+
+        // 设置用户信息到store
+        appStore.setUser(user)
 
         // 保存租户列表
         tenantList.value = tenants || []

@@ -1,5 +1,5 @@
 <template>
-  <div class="settings-page">
+  <div class="settings-page animate-fade-in-up">
     <el-card>
       <el-tabs v-model="activeTab" class="settings-tabs">
         <!-- 基本设置 -->
@@ -39,33 +39,29 @@
               v-model="tenantSearch.keyword"
               :placeholder="t('tenant.searchPlaceholder')"
               clearable
-              style="width: 200px"
+              class="search-input"
               @change="loadTenants"
             >
               <template #prefix>
                 <el-icon><Search /></el-icon>
               </template>
             </el-input>
-            <el-select v-model="tenantSearch.status" :placeholder="t('tenant.status')" clearable @change="loadTenants">
-              <el-option :label="t('tenant.statusActive')" value="active" />
-              <el-option :label="t('tenant.statusSuspended')" value="suspended" />
-              <el-option :label="t('tenant.statusExpired')" value="expired" />
-            </el-select>
+            <el-button :icon="Search" @click="showAdvancedSearch = true">高级搜索</el-button>
             <div style="flex: 1"></div>
             <el-button type="primary" :icon="Plus" @click="handleCreateTenant">{{ t('tenant.create') }}</el-button>
           </div>
-          <el-table :data="tenantList" style="width: 100%">
-            <el-table-column prop="name" :label="t('tenant.name')" />
-            <el-table-column prop="code" :label="t('tenant.code')" width="120" />
+          <el-table :data="tenantList" class="page-table">
+            <el-table-column prop="name" :label="t('tenant.name')" min-width="120" show-overflow-tooltip />
+            <el-table-column prop="code" :label="t('tenant.code')" width="120" show-overflow-tooltip />
             <el-table-column prop="status" :label="t('tenant.status')" width="100">
               <template #default="{ row }">
                 <el-tag :type="getTenantStatusType(row.status)">{{ getTenantStatusText(row.status) }}</el-tag>
               </template>
             </el-table-column>
-            <el-table-column prop="users_count" :label="t('tenant.users')" width="100" />
-            <el-table-column prop="projects_count" :label="t('tenant.projects')" width="100" />
-            <el-table-column prop="max_users" :label="t('tenant.maxUsers')" width="100" />
-            <el-table-column prop="expire_date" :label="t('tenant.expireDate')" width="120">
+            <el-table-column prop="users_count" :label="t('tenant.users')" width="100" show-overflow-tooltip />
+            <el-table-column prop="projects_count" :label="t('tenant.projects')" width="100" show-overflow-tooltip />
+            <el-table-column prop="max_users" :label="t('tenant.maxUsers')" width="100" show-overflow-tooltip />
+            <el-table-column prop="expire_date" :label="t('tenant.expireDate')" width="120" show-overflow-tooltip>
               <template #default="{ row }">
                 {{ row.expire_date || '-' }}
               </template>
@@ -97,25 +93,22 @@
               v-model="userSearch.keyword"
               :placeholder="t('common.search')"
               clearable
-              style="width: 200px"
+              class="search-input"
               @change="loadUsers"
             >
               <template #prefix>
                 <el-icon><Search /></el-icon>
               </template>
             </el-input>
-            <el-select v-model="userSearch.status" :placeholder="t('user.status')" clearable @change="loadUsers" style="width: 120px">
-              <el-option label="激活" value="active" />
-              <el-option label="禁用" value="disabled" />
-            </el-select>
+            <el-button :icon="Search" @click="showAdvancedSearch = true">高级搜索</el-button>
             <div style="flex: 1"></div>
             <el-button type="primary" :icon="Plus" @click="handleCreateUser">新建用户</el-button>
           </div>
-          <el-table :data="userList" style="width: 100%">
-            <el-table-column prop="username" :label="t('user.username')" width="120" />
-            <el-table-column prop="real_name" :label="t('user.realName')" />
-            <el-table-column prop="email" :label="t('user.email')" />
-            <el-table-column prop="phone" :label="t('user.phone')" />
+          <el-table :data="userList" class="page-table">
+            <el-table-column prop="username" :label="t('user.username')" width="120" show-overflow-tooltip />
+            <el-table-column prop="real_name" :label="t('user.realName')" min-width="100" show-overflow-tooltip />
+            <el-table-column prop="email" :label="t('user.email')" min-width="150" show-overflow-tooltip />
+            <el-table-column prop="phone" :label="t('user.phone')" width="130" show-overflow-tooltip />
             <el-table-column prop="status" :label="t('user.status')" width="100">
               <template #default="{ row }">
                 <el-tag :type="row.status === 'active' ? 'success' : 'danger'">
@@ -210,9 +203,9 @@
             <div style="flex: 1"></div>
             <el-button type="primary" :icon="Plus" @click="handleCreateWorkflow">{{ t('settings.newStatus') }}</el-button>
           </div>
-          <el-table :data="workflowList" style="width: 100%">
-            <el-table-column prop="name" :label="t('settings.statusName')" />
-            <el-table-column prop="code" :label="t('settings.statusCode')" />
+          <el-table :data="workflowList" class="page-table">
+            <el-table-column prop="name" :label="t('settings.statusName')" min-width="120" show-overflow-tooltip />
+            <el-table-column prop="code" :label="t('settings.statusCode')" width="140" show-overflow-tooltip />
             <el-table-column :label="t('settings.displayColor')" width="150">
               <template #default="{ row }">
                 <div class="color-preview">
@@ -221,7 +214,7 @@
                 </div>
               </template>
             </el-table-column>
-            <el-table-column prop="sort_order" :label="t('settings.sortOrder')" width="100" />
+            <el-table-column prop="sort_order" :label="t('settings.sortOrder')" width="100" show-overflow-tooltip />
             <el-table-column prop="is_default" :label="t('settings.setDefault')" width="100">
               <template #default="{ row }">
                 <el-tag v-if="row.is_default" type="success">{{ t('settings.yes') }}</el-tag>
@@ -417,6 +410,7 @@ const tenantDialogTitle = ref('')
 const tenantFormRef = ref()
 const isEditTenant = ref(false)
 const tenantList = ref([])
+const showAdvancedSearch = ref(false)
 const tenantSearch = reactive({
   keyword: '',
   status: ''
@@ -884,7 +878,20 @@ function handleSubmitWorkflow() {
 
 <style scoped>
 .settings-page {
-  padding: 0;
+  padding: var(--space-6);
+  height: 100%;
+  overflow-y: auto;
+}
+
+.settings-page :deep(.el-card) {
+  background: var(--color-surface);
+  border: none;
+  border-radius: var(--radius-lg);
+  box-shadow: none;
+}
+
+.settings-page :deep(.el-card__body) {
+  padding: var(--space-5);
 }
 
 .page-header {

@@ -1,6 +1,6 @@
 /* ========================================
-   PAGE LAYOUT - Global Styles
-   统一页面布局样式
+   PAGE LAYOUT - Unified Design Style
+   统一页面布局样式 - 参考首页设计风格
    ======================================== */
 
 /* ========================================
@@ -8,29 +8,36 @@
    ======================================== */
 .page-container {
   height: 100%;
+  padding: var(--space-6);
+  overflow-y: auto;
 }
 
 .page-layout {
   display: flex;
-  height: calc(100vh - 120px);
-  overflow: hidden;
+  gap: 0;
+  height: calc(100vh - 160px);
+  min-height: 500px;
 }
 
 /* ========================================
-   SIDEBAR (Tree Panel)
+   SIDEBAR (Tree Panel) - Flat Design
    ======================================== */
 .page-sidebar {
   flex-shrink: 0;
   background: var(--color-surface);
-  border-radius: var(--radius-md);
-  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-lg);
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  transition: box-shadow var(--transition-base);
+}
+
+.page-sidebar:hover {
+  box-shadow: var(--shadow-sm);
 }
 
 .sidebar-header {
-  padding: var(--space-3) var(--space-4);
+  padding: var(--space-4) var(--space-5);
   border-bottom: 1px solid var(--color-border-light);
   display: flex;
   justify-content: space-between;
@@ -39,7 +46,7 @@
 
 .sidebar-title {
   font-family: var(--font-display);
-  font-size: var(--text-sm);
+  font-size: var(--text-md);
   font-weight: 600;
   color: var(--color-text);
 }
@@ -47,7 +54,7 @@
 .sidebar-tree {
   flex: 1;
   overflow-y: auto;
-  padding: var(--space-2);
+  padding: var(--space-3);
 }
 
 /* ========================================
@@ -68,11 +75,18 @@
   align-items: center;
   gap: var(--space-2);
   overflow: hidden;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  transition: background var(--transition-fast);
+}
+
+.tree-node:hover .node-content {
+  background: var(--color-bg-alt);
 }
 
 .folder-icon {
   color: var(--color-accent);
-  font-size: 15px;
+  font-size: 16px;
   flex-shrink: 0;
 }
 
@@ -81,6 +95,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   font-size: var(--text-sm);
+  color: var(--color-text);
 }
 
 .node-count {
@@ -92,31 +107,65 @@
 .node-more {
   opacity: 0;
   transition: opacity var(--transition-fast);
+  padding: var(--space-1);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-muted);
 }
 
 .tree-node:hover .node-more {
   opacity: 1;
 }
 
+.node-more:hover {
+  background: var(--color-bg-alt);
+  color: var(--color-text);
+}
+
+/* ========================================
+   EL-TREE OVERRIDES
+   ======================================== */
+.page-sidebar :deep(.el-tree) {
+  background: transparent;
+}
+
+.page-sidebar :deep(.el-tree-node__content) {
+  border-radius: var(--radius-sm);
+  transition: background var(--transition-fast);
+}
+
+.page-sidebar :deep(.el-tree-node__content:hover) {
+  background: var(--color-bg-alt);
+}
+
+.page-sidebar :deep(.el-tree-node.is-current > .el-tree-node__content) {
+  background: var(--color-accent-light);
+  color: var(--color-accent);
+  font-weight: 500;
+}
+
 /* ========================================
    RESIZE HANDLE
    ======================================== */
 .resize-handle {
-  width: 6px;
+  width: 4px;
   flex-shrink: 0;
-  background: var(--color-bg-alt);
+  background: transparent;
   cursor: col-resize;
   transition: background var(--transition-base);
   position: relative;
   z-index: 10;
+  border-radius: var(--radius-full);
+  margin: 0;
 }
 
 .resize-handle:hover {
   background: var(--color-border);
+  width: 6px;
+  margin: 0;
 }
 
 .resize-handle:active {
-  background: var(--color-text-muted);
+  background: var(--color-accent);
 }
 
 /* ========================================
@@ -127,12 +176,28 @@
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  min-width: 0;
 }
 
+/* Content body - wrapper matching sidebar style */
+.content-body {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+/* Card support for backward compatibility */
 .content-area :deep(.el-card) {
   height: 100%;
   display: flex;
   flex-direction: column;
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  border: none;
+  box-shadow: none;
 }
 
 .content-area :deep(.el-card__body) {
@@ -140,6 +205,7 @@
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  padding: 0;
 }
 
 /* ========================================
@@ -147,8 +213,10 @@
    ======================================== */
 .toolbar {
   display: flex;
-  gap: 12px;
-  margin-bottom: 16px;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5);
+  border-bottom: 1px solid var(--color-border-light);
+  flex-shrink: 0;
 }
 
 .toolbar-left {
@@ -161,34 +229,155 @@
 .toolbar-right {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
+  gap: var(--space-3);
 }
 
 .search-input {
-  width: 200px;
+  width: 320px;
+}
+
+.search-input :deep(.el-input__wrapper) {
+  border-radius: var(--radius-md);
 }
 
 /* ========================================
-   TABLE
+   TABLE AREA
    ======================================== */
+
+/* Table wrapper for scrolling */
 .page-table {
   flex: 1;
   overflow: auto;
+  padding: 0;
+  position: relative;
+}
+
+/* Table fixed header */
+.page-table :deep(.el-table) {
+  height: 100%;
+  overflow: visible;
+}
+
+.page-table :deep(.el-table__header-wrapper) {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--color-surface);
+}
+
+.page-table :deep(.el-table__body-wrapper) {
+  overflow: visible !important;
+}
+
+/* Table cell ellipsis - default for all cells */
+.page-table :deep(.el-table__cell) {
+  overflow: hidden;
+}
+
+.page-table :deep(.el-table__cell .cell) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 23px;
+}
+
+/* Auto show tooltip for cells with ellipsis */
+.page-table :deep(.el-table__cell[title]) {
+  cursor: help;
+}
+
+/* Table in content-area - scrollable wrapper */
+.content-area :deep(.el-card__body > .el-table) {
+  flex: 1;
+  overflow: visible;
+}
+
+.content-area :deep(.el-card__body > .page-table) {
+  flex: 1;
+  overflow: visible;
 }
 
 .table-pagination {
-  padding: var(--space-3) var(--space-4);
+  padding: var(--space-4) var(--space-5);
   border-top: 1px solid var(--color-border-light);
   display: flex;
   justify-content: flex-end;
 }
 
+.table-pagination :deep(.el-pagination) {
+  gap: var(--space-2);
+}
+
+.table-pagination :deep(.el-pagination button),
+.table-pagination :deep(.el-pager li) {
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  background: transparent;
+  transition: all var(--transition-fast);
+}
+
+.table-pagination :deep(.el-pagination button:hover),
+.table-pagination :deep(.el-pager li:hover) {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+.table-pagination :deep(.el-pager li.is-active) {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: #fff;
+}
+
+/* ========================================
+   ANIMATIONS - Fade In Up
+   ======================================== */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp var(--transition-base) ease-out;
+}
+
+/* Animation delays */
+.animate-delay-1 { animation-delay: 50ms; }
+.animate-delay-2 { animation-delay: 100ms; }
+.animate-delay-3 { animation-delay: 150ms; }
+.animate-delay-4 { animation-delay: 200ms; }
+.animate-delay-5 { animation-delay: 250ms; }
+.animate-delay-6 { animation-delay: 300ms; }
+
 /* ========================================
    RESPONSIVE
    ======================================== */
+@media (max-width: 1200px) {
+  .page-container {
+    padding: var(--space-4);
+  }
+
+  .toolbar {
+    flex-wrap: wrap;
+  }
+
+  .toolbar-left {
+    flex-wrap: wrap;
+  }
+}
+
 @media (max-width: 768px) {
+  .page-container {
+    padding: var(--space-3);
+  }
+
   .page-layout {
     flex-direction: column;
+    height: auto;
   }
 
   .page-sidebar {
@@ -201,6 +390,26 @@
   }
 
   .toolbar {
-    flex-wrap: wrap;
+    gap: var(--space-2);
+  }
+
+  .toolbar-left {
+    gap: var(--space-2);
+  }
+
+  .search-input {
+    width: 100%;
   }
 }
+
+/* ========================================
+   FIX DIALOG OVERLAY
+   ======================================== */
+.el-overlay {
+  position: fixed !important;
+}
+
+.el-dialog__wrapper {
+  position: fixed !important;
+}
+
