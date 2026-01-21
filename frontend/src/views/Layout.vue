@@ -47,9 +47,14 @@
           <template #title>{{ t('menu.defects') }}</template>
         </el-menu-item>
 
-        <el-menu-item index="/mcp-skills" class="nav-item">
+        <el-menu-item index="/mcp-server" class="nav-item">
           <el-icon><Connection /></el-icon>
-          <template #title>{{ t('menu.mcpSkills') }}</template>
+          <template #title>MCP Server</template>
+        </el-menu-item>
+
+        <el-menu-item index="/skills" class="nav-item">
+          <el-icon><Files /></el-icon>
+          <template #title>Agent Skills</template>
         </el-menu-item>
 
         <el-menu-item index="/reports" class="nav-item">
@@ -211,7 +216,7 @@ import { ElMessage } from 'element-plus'
 import {
   Monitor, House, Document, Calendar, CircleClose,
   DataAnalysis, Setting, Expand, Fold, User, OfficeBuilding,
-  ArrowDown, FolderOpened, SwitchButton, Connection
+  ArrowDown, FolderOpened, SwitchButton, Connection, Files
 } from '@element-plus/icons-vue'
 
 const route = useRoute()

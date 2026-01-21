@@ -64,10 +64,16 @@ const routes = [
         meta: { title: '缺陷详情', hidden: true }
       },
       {
-        path: 'mcp-skills',
-        name: 'MCPSkills',
+        path: 'mcp-server',
+        name: 'MCPServer',
         component: () => import('@/views/MCPSkills/Index.vue'),
-        meta: { title: 'MCP/Skills', icon: 'Connection' }
+        meta: { title: 'MCP Server', icon: 'Connection' }
+      },
+      {
+        path: 'skills',
+        name: 'Skills',
+        component: () => import('@/views/Skills/Index.vue'),
+        meta: { title: 'Skills', icon: 'Files' }
       },
       {
         path: 'reports',

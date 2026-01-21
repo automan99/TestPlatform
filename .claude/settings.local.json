@@ -14,7 +14,11 @@
       "Bash(./venv/Scripts/flask db upgrade:*)",
       "Bash(./venv/Scripts/python:*)",
       "Bash(pip show:*)",
-      "WebSearch"
+      "WebSearch",
+      "Bash(npm run build)",
+      "Bash(flask db:*)",
+      "Bash(cd:*)",
+      "Bash(export:*)"
     ]
   }
 }

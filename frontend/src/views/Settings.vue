@@ -251,6 +251,11 @@
           </el-form>
         </el-tab-pane>
 
+        <!-- LLM模型配置 -->
+        <el-tab-pane label="LLM模型" name="llm-models">
+          <LLMModels />
+        </el-tab-pane>
+
         <el-tab-pane :label="t('settings.about')" name="about">
           <el-descriptions :title="t('settings.sysInfo')" :column="1" border>
             <el-descriptions-item :label="t('settings.platformName')">{{ t('settings.platformName') }}</el-descriptions-item>
@@ -394,6 +399,7 @@ import { userApi } from '@/api/user'
 import { oauthApi } from '@/api/oauth'
 import { tenantApi } from '@/api/tenant'
 import { useTenantStore } from '@/store/tenant'
+import LLMModels from './Settings/LLMModels.vue'
 
 const appStore = useAppStore()
 const { t, locale } = useI18n()

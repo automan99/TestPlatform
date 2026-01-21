@@ -31,6 +31,8 @@ from app.apis.oauth import oauth_ns
 from app.apis.project import project_ns
 from app.apis.ai_execution import ai_execution_ns
 from app.apis.mcp_skills import mcp_server_ns, skill_ns
+from app.apis.skill_repositories import skill_repository_ns, git_skill_ns
+from app.apis.llm_models import llm_model_ns
 
 # 注册命名空间
 api.add_namespace(project_ns, path='/projects')
@@ -54,3 +56,6 @@ api.add_namespace(oauth_ns, path='/oauth')
 api.add_namespace(ai_execution_ns, path='/ai-execution')
 api.add_namespace(mcp_server_ns, path='/mcp-servers')
 api.add_namespace(skill_ns, path='/skills')
+api.add_namespace(skill_repository_ns, path='/skill-repositories')
+api.add_namespace(git_skill_ns, path='/git-skills')
+api.add_namespace(llm_model_ns, path='/llm-models')

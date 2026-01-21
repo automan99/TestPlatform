@@ -54,6 +54,14 @@ class Config:
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB
     UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), 'uploads')
 
+    # Git技能仓库配置
+    # Git 仓库存储目录，可通过 .env 配置 GIT_REPOS_DIR
+    GIT_REPOS_DIR = os.getenv('GIT_REPOS_DIR', os.path.join(os.path.dirname(__file__), 'git_repos'))
+    # 加密密钥，用于加密 Git 凭证
+    ENCRYPTION_KEY = os.getenv('ENCRYPTION_KEY')
+    # 加密密钥种子（用于派生密钥）
+    ENCRYPTION_KEY_SEED = os.getenv('ENCRYPTION_KEY_SEED', 'default-seed-change-in-production')
+
     # Session配置
     PERMANENT_SESSION_LIFETIME = timedelta(days=7)
 

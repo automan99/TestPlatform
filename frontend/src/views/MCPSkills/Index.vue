@@ -1,433 +1,345 @@
 <template>
-  <div class="mcp-skills-page animate-fade-in-up">
+  <div class="mcp-servers-page animate-fade-in-up">
     <el-card>
-      <el-tabs v-model="activeTab" class="mcp-tabs" @tab-change="handleTabChange">
-        <!-- MCP Server 管理 -->
-        <el-tab-pane label="MCP Servers" name="mcp">
-          <div class="mcp-server-layout">
-            <!-- 左侧 MCP Server 列表 -->
-            <div class="mcp-server-list">
-              <div class="list-header">
-                <div class="list-title">MCP Servers</div>
-                <el-button type="primary" :icon="Plus" size="small" @click="handleCreateMCP">新建</el-button>
-              </div>
-              <div class="list-search">
-                <el-input
-                  v-model="mcpSearchForm.keyword"
-                  placeholder="搜索MCP名称..."
-                  clearable
-                  size="small"
-                  @change="loadMCPServers"
-                >
-                  <template #prefix>
-                    <el-icon><Search /></el-icon>
-                  </template>
-                </el-input>
-              </div>
-              <!-- 状态统计面板 -->
-              <div class="status-panel">
-                <div class="stat-item">
-                  <span class="stat-dot online"></span>
-                  <span class="stat-label">在线: {{ mcpStatusStats.online }}</span>
-                </div>
-                <div class="stat-item">
-                  <span class="stat-dot offline"></span>
-                  <span class="stat-label">离线: {{ mcpStatusStats.offline }}</span>
-                </div>
-                <div class="stat-item">
-                  <span class="stat-dot unknown"></span>
-                  <span class="stat-label">未知: {{ mcpStatusStats.unknown }}</span>
-                </div>
-                <div class="stat-item">
-                  <span class="stat-total">总计: {{ mcpList.length }}</span>
-                </div>
-                <div style="flex: 1"></div>
-                <el-button :icon="Refresh" size="small" circle @click="syncAllMCP" :loading="syncingAll" title="同步"></el-button>
-              </div>
-              <div class="list-items">
-                <div
-                  v-for="mcp in mcpList"
-                  :key="mcp.id"
-                  :class="['list-item', { active: selectedMcpId === mcp.id }]"
-                  @click="selectMCP(mcp)"
-                >
-                  <div class="item-header">
-                    <div class="item-left">
-                      <el-icon :class="['status-icon', getConnectionStatusClass(mcp)]" :title="getConnectionStatusText(mcp)">
-                        <component :is="getStatusIcon(mcp)" />
-                      </el-icon>
-                      <span class="item-name">{{ mcp.name }}</span>
-                    </div>
-                    <div class="item-tags">
-                      <el-tag v-if="mcp.is_builtin" type="warning" size="small">内置</el-tag>
-                      <el-switch
-                        :model-value="mcp.is_enabled"
-                        @update:model-value="(val) => handleToggleMCPStatus(mcp, val)"
-                        size="small"
-                        @click.stop
-                      />
-                    </div>
-                  </div>
-                  <div class="item-info">
-                    <el-tag size="small" type="info">{{ getTransportTypeText(mcp.transport_type) }}</el-tag>
-                    <span class="item-command">{{ mcp.transport_type === 'stdio' ? mcp.command : mcp.url }}</span>
-                    <span class="item-skills-count">工具: {{ mcp.tools_count || 0 }}</span>
-                  </div>
-                </div>
-                <el-empty v-if="mcpList.length === 0" description="暂无MCP Server" :image-size="60" />
-              </div>
-            </div>
-
-            <!-- 右侧 MCP Server 详情 -->
-            <div class="mcp-server-detail">
-              <div v-if="!selectedMcp" class="detail-empty">
-                <el-empty description="请选择一个 MCP Server 查看详情" :image-size="100" />
-              </div>
-              <div v-else class="detail-content">
-                <!-- 详情头部 -->
-                <div class="detail-header">
-                  <div class="header-left">
-                    <h2 class="detail-title">{{ selectedMcp.name }}</h2>
-                    <el-tag v-if="selectedMcp.is_builtin" type="warning">内置</el-tag>
-                    <el-tag :type="selectedMcp.is_enabled ? 'success' : 'info'">
-                      {{ selectedMcp.is_enabled ? '启用' : '禁用' }}
-                    </el-tag>
-                    <el-tag type="info">{{ getTransportTypeText(selectedMcp.transport_type) }}</el-tag>
-                  </div>
-                  <div class="header-actions">
-                    <el-button :icon="Refresh" @click="refreshMCPDetail" :loading="detailLoading">刷新</el-button>
-                    <el-button v-if="!selectedMcp.is_builtin" :icon="Edit" @click="handleEditMCP(selectedMcp)">编辑</el-button>
-                    <el-button v-if="!selectedMcp.is_builtin" :icon="Delete" type="danger" @click="handleDeleteMCP(selectedMcp)">删除</el-button>
-                  </div>
-                </div>
-
-                <!-- 详情 Tabs -->
-                <el-tabs v-model="detailTab" class="detail-tabs">
-                  <!-- 基本信息 -->
-                  <el-tab-pane label="基本信息" name="info">
-                    <div class="info-section">
-                      <div class="info-row">
-                        <span class="label">编码：</span>
-                        <span class="value">{{ selectedMcp.code || `MCP-${selectedMcp.id}` }}</span>
-                      </div>
-                      <div v-if="selectedMcp.transport_type === 'stdio'" class="info-row">
-                        <span class="label">执行命令：</span>
-                        <span class="value code">{{ selectedMcp.command }}</span>
-                      </div>
-                      <div v-if="selectedMcp.transport_type === 'stdio'" class="info-row">
-                        <span class="label">命令参数：</span>
-                        <span class="value code">{{ formatArguments(selectedMcp.arguments) }}</span>
-                      </div>
-                      <div v-if="selectedMcp.transport_type === 'stdio'" class="info-row">
-                        <span class="label">环境变量：</span>
-                        <span class="value code">{{ formatEnv(selectedMcp.env) }}</span>
-                      </div>
-                      <div v-if="selectedMcp.transport_type !== 'stdio'" class="info-row">
-                        <span class="label">连接URL：</span>
-                        <span class="value code">{{ selectedMcp.url }}</span>
-                      </div>
-                      <div class="info-row">
-                        <span class="label">超时时间：</span>
-                        <span class="value">{{ selectedMcp.timeout }}秒</span>
-                      </div>
-                      <div class="info-row">
-                        <span class="label">使用次数：</span>
-                        <span class="value">{{ selectedMcp.usage_count }}</span>
-                      </div>
-                      <div class="info-row">
-                        <span class="label">最后使用：</span>
-                        <span class="value">{{ selectedMcp.last_used_at || '-' }}</span>
-                      </div>
-                    </div>
-                  </el-tab-pane>
-
-                  <!-- 工具列表 -->
-                  <el-tab-pane label="可用工具" name="tools">
-                    <div class="tools-section">
-                      <div v-if="tools.length === 0" class="tools-empty">
-                        <el-empty description="暂无工具，请先同步" :image-size="60" />
-                      </div>
-                      <div v-else class="tools-list">
-                        <div v-for="tool in tools" :key="tool.name" class="tool-item">
-                          <div class="tool-header">
-                            <span class="tool-name">{{ tool.name }}</span>
-                            <el-button type="primary" size="small" @click="showToolDebug(tool)">调试</el-button>
-                          </div>
-                          <div class="tool-description">{{ tool.description }}</div>
-                        </div>
-                      </div>
-                    </div>
-                  </el-tab-pane>
-
-                  <!-- 资源列表 -->
-                  <el-tab-pane label="资源" name="resources">
-                    <div class="resources-section">
-                      <div v-if="resources.length === 0" class="resources-empty">
-                        <el-empty description="暂无资源，请先同步" :image-size="60" />
-                      </div>
-                      <div v-else class="resources-list">
-                        <div v-for="resource in resources" :key="resource.uri" class="resource-item">
-                          <div class="resource-header">
-                            <span class="resource-name">{{ resource.name }}</span>
-                            <el-tag size="small">{{ resource.mime_type }}</el-tag>
-                          </div>
-                          <div class="resource-description">{{ resource.description }}</div>
-                          <div class="resource-uri">{{ resource.uri }}</div>
-                        </div>
-                      </div>
-                    </div>
-                  </el-tab-pane>
-
-                  <!-- 调试面板 -->
-                  <el-tab-pane label="调试" name="debug">
-                    <div class="debug-section">
-                      <div class="debug-header">
-                        <span>工具调试</span>
-                      </div>
-
-                      <!-- 工具选择 -->
-                      <div class="debug-tool-selector">
-                        <el-form :model="debugForm" label-width="100px" label-position="top">
-                          <el-form-item label="选择工具">
-                            <el-select
-                              v-model="debugForm.toolName"
-                              placeholder="请选择工具"
-                              style="width: 100%"
-                              @change="onToolChange"
-                            >
-                              <el-option v-for="tool in tools" :key="tool.name" :label="tool.name" :value="tool.name" />
-                            </el-select>
-                          </el-form-item>
-                        </el-form>
-                      </div>
-
-                      <!-- 工具说明和参数定义 -->
-                      <div v-if="selectedTool" class="debug-tool-info">
-                        <div class="tool-info-card">
-                          <div class="tool-info-header" @click="toolInfoCollapsed = !toolInfoCollapsed" style="cursor: pointer">
-                            <span class="tool-info-title">{{ selectedTool.name }}</span>
-                            <div style="display: flex; align-items: center; gap: 8px">
-                              <el-tag size="small">{{ selectedTool.name }}</el-tag>
-                              <el-icon :class="{ 'icon-rotate': toolInfoCollapsed }"><ArrowDown /></el-icon>
-                            </div>
-                          </div>
-                          <div v-show="!toolInfoCollapsed">
-                            <div class="tool-info-description">{{ selectedTool.description }}</div>
-
-                          <!-- 参数说明表格 -->
-                          <div v-if="schemaParams.length > 0" class="schema-params-table">
-                            <div class="schema-title">参数说明</div>
-                            <el-table :data="schemaParams" size="small" border>
-                              <el-table-column prop="name" label="参数名" width="150" />
-                              <el-table-column prop="type" label="类型" width="100" />
-                              <el-table-column prop="required" label="必填" width="80">
-                                <template #default="{ row }">
-                                  <el-tag :type="row.required ? 'danger' : 'info'" size="small">
-                                    {{ row.required ? '是' : '否' }}
-                                  </el-tag>
-                                </template>
-                              </el-table-column>
-                              <el-table-column prop="description" label="说明" />
-                            </el-table>
-                          </div>
-                          <div v-else class="no-params">
-                            <el-text type="info">该工具无需参数</el-text>
-                          </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      <!-- 参数输入表单 -->
-                      <div v-if="selectedTool" class="debug-params-form">
-                        <div class="params-form-header">
-                          <span>参数输入</span>
-                          <el-button size="small" text @click="toggleParamsMode">
-                            {{ paramsMode === 'form' ? 'JSON模式' : '表单模式' }}
-                          </el-button>
-                        </div>
-
-                        <!-- 表单模式 -->
-                        <div v-if="paramsMode === 'form'" class="params-form-content">
-                          <el-form :model="debugParams" label-width="120px" label-position="left">
-                            <el-form-item
-                              v-for="param in schemaParams"
-                              :key="param.name"
-                              :label="param.name"
-                              :required="param.required"
-                            >
-                              <template #label>
-                                <span>{{ param.name }}</span>
-                                <el-tooltip v-if="param.description" :content="param.description" placement="top">
-                                  <el-icon style="margin-left: 4px; cursor: help;"><InfoFilled /></el-icon>
-                                </el-tooltip>
-                              </template>
-
-                              <!-- 根据类型显示不同的输入组件 -->
-                              <el-input
-                                v-if="param.type === 'string' && !param.enum"
-                                v-model="debugParams[param.name]"
-                                :placeholder="param.description || `请输入${param.name}`"
-                              />
-                              <el-select
-                                v-else-if="param.enum"
-                                v-model="debugParams[param.name]"
-                                :placeholder="`请选择${param.name}`"
-                                style="width: 100%"
-                              >
-                                <el-option v-for="opt in param.enum" :key="opt" :label="opt" :value="opt" />
-                              </el-select>
-                              <el-input-number
-                                v-else-if="param.type === 'number' || param.type === 'integer'"
-                                v-model="debugParams[param.name]"
-                                style="width: 100%"
-                              />
-                              <el-switch
-                                v-else-if="param.type === 'boolean'"
-                                v-model="debugParams[param.name]"
-                              />
-                              <el-input
-                                v-else-if="param.type === 'array'"
-                                v-model="debugParamsArray[param.name]"
-                                type="textarea"
-                                :rows="2"
-                                :placeholder="'请输入数组格式的值，如: [&quot;item1&quot;, &quot;item2&quot;]'"
-                                @input="parseArrayParam(param.name)"
-                              />
-                              <el-input
-                                v-else
-                                v-model="debugParams[param.name]"
-                                type="textarea"
-                                :rows="2"
-                                :placeholder="param.description || `请输入${param.name}`"
-                              />
-                            </el-form-item>
-
-                            <el-form-item v-if="schemaParams.length === 0">
-                              <el-text type="info">该工具无需参数</el-text>
-                            </el-form-item>
-                          </el-form>
-                        </div>
-
-                        <!-- JSON模式 -->
-                        <div v-else class="params-json-content">
-                          <el-input
-                            v-model="debugForm.paramsJson"
-                            type="textarea"
-                            :rows="6"
-                            placeholder='{"param1": "value1"}'
-                            class="code-editor"
-                          />
-                          <div v-if="paramsJsonError" class="params-json-error">
-                            <el-text type="danger">{{ paramsJsonError }}</el-text>
-                          </div>
-                        </div>
-
-                        <div class="debug-actions">
-                          <el-button type="primary" :icon="VideoPlay" @click="invokeTool" :loading="debugInvoking">
-                            执行
-                          </el-button>
-                          <el-button @click="clearDebugResult">清空结果</el-button>
-                          <el-button v-if="paramsMode === 'form'" @click="fillParamsExample">填充示例</el-button>
-                        </div>
-                      </div>
-
-                      <!-- 执行结果 -->
-                      <div v-if="debugResult" class="debug-result">
-                        <div class="result-header">执行结果</div>
-                        <pre class="result-content">{{ debugResult }}</pre>
-                      </div>
-                    </div>
-                  </el-tab-pane>
-                </el-tabs>
-              </div>
-            </div>
+      <!-- MCP Server 左右布局 -->
+      <div class="mcp-server-layout">
+        <!-- 左侧 MCP Server 列表 -->
+        <div class="mcp-server-list">
+          <div class="list-header">
+            <div class="list-title">MCP Servers</div>
+            <el-button type="primary" :icon="Plus" size="small" @click="handleCreateMCP">新建</el-button>
           </div>
-        </el-tab-pane>
-
-        <!-- Skill 管理 -->
-        <el-tab-pane label="Skills" name="skill">
-          <div class="toolbar">
-            <el-select v-model="skillSearchForm.mcp_id" placeholder="筛选MCP" clearable @change="loadSkills">
-              <el-option v-for="mcp in mcpList" :key="mcp.id" :label="mcp.name" :value="mcp.id" />
-            </el-select>
+          <div class="list-search">
             <el-input
-              v-model="skillSearchForm.keyword"
-              placeholder="搜索Skill名称..."
+              v-model="mcpSearchForm.keyword"
+              placeholder="搜索MCP名称..."
               clearable
-              class="search-input"
-              @change="loadSkills"
+              size="small"
+              @change="loadMCPServers"
             >
               <template #prefix>
                 <el-icon><Search /></el-icon>
               </template>
             </el-input>
-            <el-button :icon="Search" @click="showSkillAdvancedSearch = true">高级搜索</el-button>
-            <div style="flex: 1"></div>
-            <el-button type="primary" :icon="Plus" @click="handleCreateSkill">新建Skill</el-button>
           </div>
-
-          <el-table :data="skillList" class="page-table">
-            <el-table-column label="编码" width="120" show-overflow-tooltip>
-              <template #default="{ row }">
-                {{ row.code || `SKILL-${row.id}` }}
-              </template>
-            </el-table-column>
-            <el-table-column prop="name" label="名称" min-width="150" show-overflow-tooltip />
-            <el-table-column label="关联MCP" width="150" show-overflow-tooltip>
-              <template #default="{ row }">
-                {{ row.mcp_name || '-' }}
-              </template>
-            </el-table-column>
-            <el-table-column prop="script_type" label="类型" width="100">
-              <template #default="{ row }">
-                <el-tag>{{ row.script_type }}</el-tag>
-              </template>
-            </el-table-column>
-            <el-table-column prop="status" label="状态" width="100">
-              <template #default="{ row }">
-                <el-tag :type="row.is_enabled ? 'success' : 'info'">
-                  {{ row.is_enabled ? '启用' : '禁用' }}
-                </el-tag>
-              </template>
-            </el-table-column>
-            <el-table-column prop="usage_count" label="使用次数" width="100" />
-            <el-table-column label="最后使用" width="160">
-              <template #default="{ row }">
-                {{ row.last_used_at || '-' }}
-              </template>
-            </el-table-column>
-            <el-table-column label="操作" width="200" fixed="right">
-              <template #default="{ row }">
-                <el-tooltip content="执行测试" placement="top">
-                  <el-button type="success" link size="small" @click="handleExecuteSkill(row)">
-                    <el-icon><VideoPlay /></el-icon>
-                  </el-button>
-                </el-tooltip>
-                <el-tooltip :content="row.is_enabled ? '禁用' : '启用'" placement="top">
-                  <el-button
-                    :type="row.is_enabled ? 'warning' : 'success'"
-                    link
+          <!-- 状态统计面板 -->
+          <div class="status-panel">
+            <div class="stat-item">
+              <span class="stat-dot online"></span>
+              <span class="stat-label">在线: {{ mcpStatusStats.online }}</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-dot offline"></span>
+              <span class="stat-label">离线: {{ mcpStatusStats.offline }}</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-dot unknown"></span>
+              <span class="stat-label">未知: {{ mcpStatusStats.unknown }}</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-total">总计: {{ mcpList.length }}</span>
+            </div>
+            <div style="flex: 1"></div>
+            <el-button :icon="Refresh" size="small" circle @click="syncAllMCP" :loading="syncingAll" title="同步"></el-button>
+          </div>
+          <div class="list-items">
+            <div
+              v-for="mcp in mcpList"
+              :key="mcp.id"
+              :class="['list-item', { active: selectedMcpId === mcp.id }]"
+              @click="selectMCP(mcp)"
+            >
+              <div class="item-header">
+                <div class="item-left">
+                  <el-icon :class="['status-icon', getConnectionStatusClass(mcp)]" :title="getConnectionStatusText(mcp)">
+                    <component :is="getStatusIcon(mcp)" />
+                  </el-icon>
+                  <span class="item-name">{{ mcp.name }}</span>
+                </div>
+                <div class="item-tags">
+                  <el-tag v-if="mcp.is_builtin" type="warning" size="small">内置</el-tag>
+                  <el-switch
+                    :model-value="mcp.is_enabled"
+                    @update:model-value="(val) => handleToggleMCPStatus(mcp, val)"
                     size="small"
-                    @click="handleToggleSkillStatus(row)"
-                  >
-                    <el-icon><SwitchButton /></el-icon>
-                  </el-button>
-                </el-tooltip>
-                <el-tooltip content="编辑" placement="top">
-                  <el-button type="primary" link size="small" @click="handleEditSkill(row)">
-                    <el-icon><Edit /></el-icon>
-                  </el-button>
-                </el-tooltip>
-                <el-tooltip content="删除" placement="top">
-                  <el-button type="danger" link size="small" @click="handleDeleteSkill(row)">
-                    <el-icon><Delete /></el-icon>
-                  </el-button>
-                </el-tooltip>
-              </template>
-            </el-table-column>
-          </el-table>
-        </el-tab-pane>
-      </el-tabs>
+                    @click.stop
+                  />
+                </div>
+              </div>
+              <div class="item-info">
+                <el-tag size="small" type="info">{{ getTransportTypeText(mcp.transport_type) }}</el-tag>
+                <span class="item-command">{{ mcp.transport_type === 'stdio' ? mcp.command : mcp.url }}</span>
+                <span class="item-tools-count">工具: {{ mcp.tools_count || 0 }}</span>
+              </div>
+            </div>
+            <el-empty v-if="mcpList.length === 0" description="暂无MCP Server" :image-size="60" />
+          </div>
+        </div>
+
+        <!-- 右侧 MCP Server 详情 -->
+        <div class="mcp-server-detail">
+          <div v-if="!selectedMcp" class="detail-empty">
+            <el-empty description="请选择一个 MCP Server 查看详情" :image-size="100" />
+          </div>
+          <div v-else class="detail-content">
+            <!-- 详情头部 -->
+            <div class="detail-header">
+              <div class="header-left">
+                <h2 class="detail-title">{{ selectedMcp.name }}</h2>
+                <el-tag v-if="selectedMcp.is_builtin" type="warning">内置</el-tag>
+                <el-tag :type="selectedMcp.is_enabled ? 'success' : 'info'">
+                  {{ selectedMcp.is_enabled ? '启用' : '禁用' }}
+                </el-tag>
+                <el-tag type="info">{{ getTransportTypeText(selectedMcp.transport_type) }}</el-tag>
+              </div>
+              <div class="header-actions">
+                <el-button :icon="Refresh" @click="refreshMCPDetail" :loading="detailLoading">同步</el-button>
+                <el-button v-if="!selectedMcp.is_builtin" :icon="Edit" @click="handleEditMCP(selectedMcp)">编辑</el-button>
+                <el-button v-if="!selectedMcp.is_builtin" :icon="Delete" type="danger" @click="handleDeleteMCP(selectedMcp)">删除</el-button>
+              </div>
+            </div>
+
+            <!-- 详情 Tabs -->
+            <el-tabs v-model="detailTab" class="detail-tabs">
+              <!-- 基本信息 -->
+              <el-tab-pane label="基本信息" name="info">
+                <div class="info-section">
+                  <div class="info-row">
+                    <span class="label">编码：</span>
+                    <span class="value">{{ selectedMcp.code || `MCP-${selectedMcp.id}` }}</span>
+                  </div>
+                  <div v-if="selectedMcp.transport_type === 'stdio'" class="info-row">
+                    <span class="label">执行命令：</span>
+                    <span class="value code">{{ selectedMcp.command }}</span>
+                  </div>
+                  <div v-if="selectedMcp.transport_type === 'stdio'" class="info-row">
+                    <span class="label">命令参数：</span>
+                    <span class="value code">{{ formatArguments(selectedMcp.arguments) }}</span>
+                  </div>
+                  <div v-if="selectedMcp.transport_type === 'stdio'" class="info-row">
+                    <span class="label">环境变量：</span>
+                    <span class="value code">{{ formatEnv(selectedMcp.env) }}</span>
+                  </div>
+                  <div v-if="selectedMcp.transport_type !== 'stdio'" class="info-row">
+                    <span class="label">连接URL：</span>
+                    <span class="value code">{{ selectedMcp.url }}</span>
+                  </div>
+                  <div class="info-row">
+                    <span class="label">超时时间：</span>
+                    <span class="value">{{ selectedMcp.timeout }}秒</span>
+                  </div>
+                  <div class="info-row">
+                    <span class="label">使用次数：</span>
+                    <span class="value">{{ selectedMcp.usage_count }}</span>
+                  </div>
+                  <div class="info-row">
+                    <span class="label">最后使用：</span>
+                    <span class="value">{{ selectedMcp.last_used_at || '-' }}</span>
+                  </div>
+                </div>
+              </el-tab-pane>
+
+              <!-- 可用工具 -->
+              <el-tab-pane label="可用工具" name="tools">
+                <div class="tools-section">
+                  <div v-if="tools.length === 0" class="tools-empty">
+                    <el-empty description="暂无工具，请点击上方同步按钮" :image-size="60" />
+                  </div>
+                  <div v-else class="tools-list">
+                    <div v-for="tool in tools" :key="tool.name" class="tool-item">
+                      <div class="tool-header">
+                        <span class="tool-name">{{ tool.name }}</span>
+                        <el-button type="primary" size="small" @click="showToolDebug(tool)">调试</el-button>
+                      </div>
+                      <div class="tool-description">{{ tool.description }}</div>
+                    </div>
+                  </div>
+                </div>
+              </el-tab-pane>
+
+              <!-- 资源列表 -->
+              <el-tab-pane label="资源" name="resources">
+                <div class="resources-section">
+                  <div v-if="resources.length === 0" class="resources-empty">
+                    <el-empty description="暂无资源" :image-size="60" />
+                  </div>
+                  <div v-else class="resources-list">
+                    <div v-for="resource in resources" :key="resource.uri" class="resource-item">
+                      <div class="resource-header">
+                        <span class="resource-name">{{ resource.name }}</span>
+                        <el-tag size="small">{{ resource.mime_type }}</el-tag>
+                      </div>
+                      <div class="resource-description">{{ resource.description }}</div>
+                      <div class="resource-uri">{{ resource.uri }}</div>
+                    </div>
+                  </div>
+                </div>
+              </el-tab-pane>
+
+              <!-- 调试面板 -->
+              <el-tab-pane label="调试" name="debug">
+                <div class="debug-section">
+                  <div class="debug-header">
+                    <span>工具调试</span>
+                  </div>
+
+                  <!-- 工具选择 -->
+                  <div class="debug-tool-selector">
+                    <el-form :model="debugForm" label-width="100px" label-position="top">
+                      <el-form-item label="选择工具">
+                        <el-select
+                          v-model="debugForm.toolName"
+                          placeholder="请选择工具"
+                          style="width: 100%"
+                          @change="onToolChange"
+                        >
+                          <el-option v-for="tool in tools" :key="tool.name" :label="tool.name" :value="tool.name" />
+                        </el-select>
+                      </el-form-item>
+                    </el-form>
+                  </div>
+
+                  <!-- 工具说明和参数定义 -->
+                  <div v-if="selectedTool" class="debug-tool-info">
+                    <div class="tool-info-card">
+                      <div class="tool-info-header" @click="toolInfoCollapsed = !toolInfoCollapsed" style="cursor: pointer">
+                        <span class="tool-info-title">{{ selectedTool.name }}</span>
+                        <div style="display: flex; align-items: center; gap: 8px">
+                          <el-tag size="small">{{ selectedTool.name }}</el-tag>
+                          <el-icon :class="{ 'icon-rotate': toolInfoCollapsed }"><ArrowDown /></el-icon>
+                        </div>
+                      </div>
+                      <div v-show="!toolInfoCollapsed">
+                        <div class="tool-info-description">{{ selectedTool.description }}</div>
+
+                        <!-- 参数说明表格 -->
+                        <div v-if="schemaParams.length > 0" class="schema-params-table">
+                          <div class="schema-title">参数说明</div>
+                          <el-table :data="schemaParams" size="small" border>
+                            <el-table-column prop="name" label="参数名" width="150" />
+                            <el-table-column prop="type" label="类型" width="100" />
+                            <el-table-column prop="required" label="必填" width="80">
+                              <template #default="{ row }">
+                                <el-tag :type="row.required ? 'danger' : 'info'" size="small">
+                                  {{ row.required ? '是' : '否' }}
+                                </el-tag>
+                              </template>
+                            </el-table-column>
+                            <el-table-column prop="description" label="说明" />
+                          </el-table>
+                        </div>
+                        <div v-else class="no-params">
+                          <el-text type="info">该工具无需参数</el-text>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- 参数输入表单 -->
+                  <div v-if="selectedTool" class="debug-params-form">
+                    <div class="params-form-header">
+                      <span>参数输入</span>
+                      <el-button size="small" text @click="toggleParamsMode">
+                        {{ paramsMode === 'form' ? 'JSON模式' : '表单模式' }}
+                      </el-button>
+                    </div>
+
+                    <!-- 表单模式 -->
+                    <div v-if="paramsMode === 'form'" class="params-form-content">
+                      <el-form :model="debugParams" label-width="120px" label-position="left">
+                        <el-form-item
+                          v-for="param in schemaParams"
+                          :key="param.name"
+                          :label="param.name"
+                          :required="param.required"
+                        >
+                          <template #label>
+                            <span>{{ param.name }}</span>
+                            <el-tooltip v-if="param.description" :content="param.description" placement="top">
+                              <el-icon style="margin-left: 4px; cursor: help;"><InfoFilled /></el-icon>
+                            </el-tooltip>
+                          </template>
+
+                          <!-- 根据类型显示不同的输入组件 -->
+                          <el-input
+                            v-if="param.type === 'string' && !param.enum"
+                            v-model="debugParams[param.name]"
+                            :placeholder="param.description || `请输入${param.name}`"
+                          />
+                          <el-select
+                            v-else-if="param.enum"
+                            v-model="debugParams[param.name]"
+                            :placeholder="`请选择${param.name}`"
+                            style="width: 100%"
+                          >
+                            <el-option v-for="opt in param.enum" :key="opt" :label="opt" :value="opt" />
+                          </el-select>
+                          <el-input-number
+                            v-else-if="param.type === 'number' || param.type === 'integer'"
+                            v-model="debugParams[param.name]"
+                            style="width: 100%"
+                          />
+                          <el-switch
+                            v-else-if="param.type === 'boolean'"
+                            v-model="debugParams[param.name]"
+                          />
+                          <el-input
+                            v-else-if="param.type === 'array'"
+                            v-model="debugParamsArray[param.name]"
+                            type="textarea"
+                            :rows="2"
+                            placeholder="请输入数组格式的值，如: [&quot;item1&quot;, &quot;item2&quot;]"
+                            @input="parseArrayParam(param.name)"
+                          />
+                          <el-input
+                            v-else
+                            v-model="debugParams[param.name]"
+                            type="textarea"
+                            :rows="2"
+                            :placeholder="param.description || `请输入${param.name}`"
+                          />
+                        </el-form-item>
+
+                        <el-form-item v-if="schemaParams.length === 0">
+                          <el-text type="info">该工具无需参数</el-text>
+                        </el-form-item>
+                      </el-form>
+                    </div>
+
+                    <!-- JSON模式 -->
+                    <div v-else class="params-json-content">
+                      <el-input
+                        v-model="debugForm.paramsJson"
+                        type="textarea"
+                        :rows="6"
+                        placeholder='{"param1": "value1"}'
+                        class="code-editor"
+                      />
+                      <div v-if="paramsJsonError" class="params-json-error">
+                        <el-text type="danger">{{ paramsJsonError }}</el-text>
+                      </div>
+                    </div>
+
+                    <div class="debug-actions">
+                      <el-button type="primary" :icon="VideoPlay" @click="invokeTool" :loading="debugInvoking">
+                        执行
+                      </el-button>
+                      <el-button @click="clearDebugResult">清空结果</el-button>
+                      <el-button v-if="paramsMode === 'form'" @click="fillParamsExample">填充示例</el-button>
+                    </div>
+                  </div>
+
+                  <!-- 执行结果 -->
+                  <div v-if="debugResult" class="debug-result">
+                    <div class="result-header">执行结果</div>
+                    <pre class="result-content">{{ debugResult }}</pre>
+                  </div>
+                </div>
+              </el-tab-pane>
+            </el-tabs>
+          </div>
+        </div>
+      </div>
     </el-card>
 
     <!-- MCP Server 表单对话框 -->
@@ -442,7 +354,6 @@
               <el-select v-model="mcpForm.transport_type" style="width: 100%">
                 <el-option label="Stdio" value="stdio" />
                 <el-option label="SSE" value="sse" />
-                <el-option label="HTTP" value="http" />
               </el-select>
             </el-form-item>
           </el-col>
@@ -481,8 +392,8 @@
           </el-form-item>
         </template>
 
-        <!-- SSE/HTTP 类型配置 -->
-        <template v-if="mcpForm.transport_type === 'sse' || mcpForm.transport_type === 'http'">
+        <!-- SSE 类型配置 -->
+        <template v-if="mcpForm.transport_type === 'sse'">
           <el-form-item label="连接URL" prop="url">
             <el-input v-model="mcpForm.url" placeholder="https://example.com/mcp-endpoint" />
           </el-form-item>
@@ -502,151 +413,6 @@
         <el-button type="primary" @click="handleSubmitMCP">确定</el-button>
       </template>
     </el-dialog>
-
-    <!-- Skill 表单对话框 -->
-    <el-dialog v-model="skillDialogVisible" :title="skillDialogTitle" width="900px" destroy-on-close>
-      <el-form :model="skillForm" :rules="skillRules" ref="skillFormRef" label-width="120px">
-        <el-form-item label="Skill名称" prop="name">
-          <el-input v-model="skillForm.name" placeholder="请输入Skill名称" />
-        </el-form-item>
-        <el-row :gutter="20">
-          <el-col :span="12">
-            <el-form-item label="关联MCP" prop="mcp_id">
-              <el-select v-model="skillForm.mcp_id" style="width: 100%" clearable>
-                <el-option v-for="mcp in mcpList" :key="mcp.id" :label="mcp.name" :value="mcp.id" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="脚本类型" prop="script_type">
-              <el-select v-model="skillForm.script_type" style="width: 100%">
-                <el-option label="Python" value="python" />
-                <el-option label="JavaScript" value="javascript" />
-                <el-option label="YAML" value="yaml" />
-                <el-option label="JSON" value="json" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-form-item label="脚本内容" prop="script_content">
-          <el-input
-            v-model="skillForm.script_content"
-            type="textarea"
-            :rows="10"
-            placeholder="请输入脚本内容"
-            class="code-editor"
-          />
-        </el-form-item>
-        <el-form-item label="参数结构定义">
-          <el-input
-            v-model="skillForm.params_schema_json"
-            type="textarea"
-            :rows="4"
-            placeholder='{"param1": {"type": "string", "required": true, "description": "参数1"}}'
-            @input="validateSkillJSON('params_schema')"
-          />
-          <div v-if="paramsSchemaError" class="json-error">{{ paramsSchemaError }}</div>
-        </el-form-item>
-        <el-form-item label="参数示例">
-          <el-input
-            v-model="skillForm.params_example_json"
-            type="textarea"
-            :rows="3"
-            placeholder='{"param1": "value1", "param2": "value2"}'
-            @input="validateSkillJSON('params_example')"
-          />
-          <div v-if="paramsExampleError" class="json-error">{{ paramsExampleError }}</div>
-        </el-form-item>
-        <el-row :gutter="20">
-          <el-col :span="12">
-            <el-form-item label="超时时间">
-              <el-input-number v-model="skillForm.timeout" :min="1" :max="600" style="width: 100%" />
-              <span style="margin-left: 8px">秒</span>
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="重试次数">
-              <el-input-number v-model="skillForm.retry_count" :min="0" :max="5" style="width: 100%" />
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-form-item label="描述">
-          <el-input v-model="skillForm.description" type="textarea" :rows="2" />
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="skillDialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="handleSubmitSkill">确定</el-button>
-      </template>
-    </el-dialog>
-
-    <!-- MCP 高级搜索对话框 -->
-    <el-dialog v-model="showMCPAdvancedSearch" title="高级搜索" width="600px" destroy-on-close>
-      <el-form :model="mcpAdvancedSearchForm" label-width="100px">
-        <el-form-item label="MCP名称">
-          <el-input v-model="mcpAdvancedSearchForm.name" placeholder="搜索MCP名称" clearable />
-        </el-form-item>
-        <el-form-item label="传输类型">
-          <el-select v-model="mcpAdvancedSearchForm.transport_type" placeholder="选择传输类型" clearable style="width: 100%">
-            <el-option label="Stdio" value="stdio" />
-            <el-option label="SSE" value="sse" />
-            <el-option label="HTTP" value="http" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="状态">
-          <el-select v-model="mcpAdvancedSearchForm.status" placeholder="选择状态" clearable style="width: 100%">
-            <el-option label="启用" value="active" />
-            <el-option label="禁用" value="inactive" />
-          </el-select>
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="handleResetMCPAdvancedSearch">重置</el-button>
-        <el-button @click="showMCPAdvancedSearch = false">取消</el-button>
-        <el-button type="primary" @click="handleMCPAdvancedSearch">搜索</el-button>
-      </template>
-    </el-dialog>
-
-    <!-- Skill 高级搜索对话框 -->
-    <el-dialog v-model="showSkillAdvancedSearch" title="高级搜索" width="600px" destroy-on-close>
-      <el-form :model="skillAdvancedSearchForm" label-width="100px">
-        <el-form-item label="Skill名称">
-          <el-input v-model="skillAdvancedSearchForm.name" placeholder="搜索Skill名称" clearable />
-        </el-form-item>
-        <el-form-item label="关联MCP">
-          <el-select v-model="skillAdvancedSearchForm.mcp_id" placeholder="选择MCP" clearable style="width: 100%">
-            <el-option v-for="mcp in mcpList" :key="mcp.id" :label="mcp.name" :value="mcp.id" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="脚本类型">
-          <el-select v-model="skillAdvancedSearchForm.script_type" placeholder="选择脚本类型" clearable style="width: 100%">
-            <el-option label="Python" value="python" />
-            <el-option label="JavaScript" value="javascript" />
-            <el-option label="YAML" value="yaml" />
-            <el-option label="JSON" value="json" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="状态">
-          <el-select v-model="skillAdvancedSearchForm.status" placeholder="选择状态" clearable style="width: 100%">
-            <el-option label="启用" value="active" />
-            <el-option label="禁用" value="inactive" />
-          </el-select>
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="handleResetSkillAdvancedSearch">重置</el-button>
-        <el-button @click="showSkillAdvancedSearch = false">取消</el-button>
-        <el-button type="primary" @click="handleSkillAdvancedSearch">搜索</el-button>
-      </template>
-    </el-dialog>
-
-    <!-- 执行结果对话框 -->
-    <el-dialog v-model="showExecutionResult" title="执行结果" width="600px">
-      <pre class="execution-result">{{ executionResult }}</pre>
-      <template #footer>
-        <el-button @click="showExecutionResult = false">关闭</el-button>
-      </template>
-    </el-dialog>
   </div>
 </template>
 
@@ -654,13 +420,12 @@
 import { ref, reactive, onMounted, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
-  Plus, Search, Edit, Delete, SwitchButton, Connection, VideoPlay, Refresh, InfoFilled, ArrowDown
+  Plus, Search, Edit, Delete, VideoPlay, Refresh, InfoFilled, ArrowDown,
+  SuccessFilled, CircleCloseFilled, WarningFilled
 } from '@element-plus/icons-vue'
-import { mcpServerApi, skillApi } from '@/api/mcp-skills'
+import { mcpServerApi } from '@/api/mcp-skills'
 
-const activeTab = ref('mcp')
 const mcpList = ref([])
-const skillList = ref([])
 
 // MCP Server 相关
 const selectedMcpId = ref(null)
@@ -884,12 +649,6 @@ function fillParamsExample() {
 }
 
 const mcpSearchForm = reactive({ keyword: '' })
-const mcpAdvancedSearchForm = reactive({
-  name: '',
-  transport_type: '',
-  status: ''
-})
-const showMCPAdvancedSearch = ref(false)
 
 const mcpDialogVisible = ref(false)
 const mcpDialogTitle = ref('')
@@ -913,54 +672,11 @@ const mcpRules = {
   name: [{ required: true, message: '请输入MCP名称', trigger: 'blur' }]
 }
 
-// Skill 相关
-const skillDialogVisible = ref(false)
-const skillDialogTitle = ref('')
-const skillFormRef = ref()
-const isEditSkill = ref(false)
-
-const skillSearchForm = reactive({ keyword: '', mcp_id: null })
-const skillAdvancedSearchForm = reactive({
-  name: '',
-  mcp_id: null,
-  script_type: '',
-  status: ''
-})
-const showSkillAdvancedSearch = ref(false)
-
-const skillForm = reactive({
-  id: null,
-  name: '',
-  code: '',
-  mcp_id: null,
-  script_content: '',
-  script_type: 'python',
-  params_schema_json: '',
-  params_example_json: '',
-  timeout: 60,
-  retry_count: 1,
-  log_enabled: true,
-  status: 'active',
-  description: ''
-})
-
-const skillRules = {
-  name: [{ required: true, message: '请输入Skill名称', trigger: 'blur' }]
-}
-
-const paramsSchemaError = ref('')
-const paramsExampleError = ref('')
-
-// 执行结果
-const showExecutionResult = ref(false)
-const executionResult = ref('')
-
 // 辅助函数
 function getTransportTypeText(type) {
   const map = {
     stdio: 'Stdio',
-    sse: 'SSE',
-    http: 'HTTP'
+    sse: 'SSE'
   }
   return map[type] || type
 }
@@ -1017,11 +733,11 @@ function getConnectionStatusText(mcp) {
 function getStatusIcon(mcp) {
   const status = mcpConnectionStatus.value[mcp.id] || 'unknown'
   const iconMap = {
-    online: 'SuccessFilled',
-    offline: 'CircleCloseFilled',
-    unknown: 'WarningFilled'
+    online: SuccessFilled,
+    offline: CircleCloseFilled,
+    unknown: WarningFilled
   }
-  return iconMap[status] || 'WarningFilled'
+  return iconMap[status] || WarningFilled
 }
 
 async function checkMCPStatus(mcp) {
@@ -1086,23 +802,6 @@ async function syncAllMCP() {
     ElMessage.error('同步失败')
   } finally {
     syncingAll.value = false
-  }
-}
-
-function validateSkillJSON(field) {
-  const value = skillForm[`${field}_json`]
-  if (!value || value.trim() === '') {
-    if (field === 'params_schema') paramsSchemaError.value = ''
-    if (field === 'params_example') paramsExampleError.value = ''
-    return
-  }
-  try {
-    JSON.parse(value)
-    if (field === 'params_schema') paramsSchemaError.value = ''
-    if (field === 'params_example') paramsExampleError.value = ''
-  } catch (e) {
-    if (field === 'params_schema') paramsSchemaError.value = 'JSON格式错误'
-    if (field === 'params_example') paramsExampleError.value = 'JSON格式错误'
   }
 }
 
@@ -1247,16 +946,36 @@ async function loadMCPServers() {
       }
     }
   })
+
+  // 如果没有选中的 MCP Server 且列表不为空，自动选中第一个
+  if (!selectedMcpId.value && mcpList.value.length > 0) {
+    selectMCP(mcpList.value[0])
+  }
 }
 
-function handleToggleMCPStatus(row, newStatus) {
+async function handleToggleMCPStatus(row, newStatus) {
   const action = newStatus ? '启用' : '禁用'
-  mcpServerApi.update(row.id, { is_enabled: newStatus }).then(() => {
+  try {
+    await mcpServerApi.update(row.id, { is_enabled: newStatus })
     ElMessage.success(`${action}成功`)
+
     // 更新本地状态
     mcpConnectionStatus.value[row.id] = newStatus ? 'unknown' : 'offline'
-    loadMCPServers()
-  })
+
+    // 如果是启用操作，立即同步一次以获取工具和确认连接
+    if (newStatus) {
+      try {
+        await mcpServerApi.sync(row.id)
+        mcpConnectionStatus.value[row.id] = 'online'
+      } catch (e) {
+        mcpConnectionStatus.value[row.id] = 'offline'
+      }
+    }
+
+    await loadMCPServers()
+  } catch (e) {
+    ElMessage.error(`${action}失败`)
+  }
 }
 
 function handleCreateMCP() {
@@ -1390,185 +1109,6 @@ function handleSubmitMCP() {
   })
 }
 
-function handleMCPAdvancedSearch() {
-  const params = {}
-  if (mcpAdvancedSearchForm.name) params.keyword = mcpAdvancedSearchForm.name
-  if (mcpAdvancedSearchForm.transport_type) params.transport_type = mcpAdvancedSearchForm.transport_type
-  if (mcpAdvancedSearchForm.status) params.status = mcpAdvancedSearchForm.status
-
-  mcpServerApi.getList(params).then(res => {
-    mcpList.value = res.data?.items || []
-    showMCPAdvancedSearch.value = false
-  })
-}
-
-function handleResetMCPAdvancedSearch() {
-  Object.assign(mcpAdvancedSearchForm, {
-    name: '',
-    transport_type: '',
-    status: ''
-  })
-}
-
-// 加载Skills
-async function loadSkills() {
-  const params = {}
-  if (skillSearchForm.keyword) params.keyword = skillSearchForm.keyword
-  if (skillSearchForm.mcp_id) params.mcp_id = skillSearchForm.mcp_id
-
-  const res = await skillApi.getList(params)
-  skillList.value = res.data?.items || []
-}
-
-// Skill CRUD
-function handleCreateSkill() {
-  isEditSkill.value = false
-  skillDialogTitle.value = '新建Skill'
-  Object.assign(skillForm, {
-    id: null,
-    name: '',
-    code: '',
-    mcp_id: null,
-    script_content: '',
-    script_type: 'python',
-    params_schema_json: '',
-    params_example_json: '',
-    timeout: 60,
-    retry_count: 1,
-    log_enabled: true,
-    status: 'active',
-    description: ''
-  })
-  paramsSchemaError.value = ''
-  paramsExampleError.value = ''
-  skillDialogVisible.value = true
-}
-
-function handleEditSkill(row) {
-  isEditSkill.value = true
-  skillDialogTitle.value = '编辑Skill'
-  Object.assign(skillForm, {
-    id: row.id,
-    name: row.name,
-    code: row.code,
-    mcp_id: row.mcp_id,
-    script_content: row.script_content,
-    script_type: row.script_type,
-    params_schema_json: row.params_schema || '',
-    params_example_json: row.params_example || '',
-    timeout: row.timeout,
-    retry_count: row.retry_count,
-    log_enabled: row.log_enabled,
-    status: row.status,
-    description: row.description
-  })
-  skillDialogVisible.value = true
-}
-
-function handleDeleteSkill(row) {
-  ElMessageBox.confirm('确定要删除这个Skill吗？', '提示', { type: 'warning' })
-    .then(() => skillApi.delete(row.id))
-    .then(() => {
-      ElMessage.success('删除成功')
-      loadSkills()
-    })
-}
-
-function handleSubmitSkill() {
-  skillFormRef.value.validate((valid) => {
-    if (valid) {
-      const data = { ...skillForm }
-      delete data.params_schema_json
-      delete data.params_example_json
-
-      if (skillForm.params_schema_json) {
-        try {
-          data.params_schema = JSON.parse(skillForm.params_schema_json)
-        } catch (e) {
-          ElMessage.error('参数结构JSON格式错误')
-          return
-        }
-      }
-      if (skillForm.params_example_json) {
-        try {
-          data.params_example = JSON.parse(skillForm.params_example_json)
-        } catch (e) {
-          ElMessage.error('参数示例JSON格式错误')
-          return
-        }
-      }
-
-      const api = isEditSkill.value ? skillApi.update : skillApi.create
-      if (isEditSkill.value) {
-        api(data.id, data).then(() => {
-          ElMessage.success('更新成功')
-          skillDialogVisible.value = false
-          loadSkills()
-        })
-      } else {
-        api(data).then(() => {
-          ElMessage.success('创建成功')
-          skillDialogVisible.value = false
-          loadSkills()
-        })
-      }
-    }
-  })
-}
-
-async function handleExecuteSkill(row) {
-  ElMessage.info('正在执行Skill...')
-  try {
-    const res = await skillApi.execute(row.id, {})
-    executionResult.value = JSON.stringify(res.data, null, 2)
-    showExecutionResult.value = true
-    loadSkills()
-  } catch (e) {
-    ElMessage.error('执行失败')
-  }
-}
-
-function handleToggleSkillStatus(row) {
-  const newStatus = !row.is_enabled
-  const action = newStatus ? '启用' : '禁用'
-  skillApi.update(row.id, { is_enabled: newStatus }).then(() => {
-    ElMessage.success(`${action}成功`)
-    loadSkills()
-  })
-}
-
-// Skill 高级搜索
-function handleSkillAdvancedSearch() {
-  const params = {}
-  if (skillAdvancedSearchForm.name) params.keyword = skillAdvancedSearchForm.name
-  if (skillAdvancedSearchForm.mcp_id) params.mcp_id = skillAdvancedSearchForm.mcp_id
-  if (skillAdvancedSearchForm.script_type) params.script_type = skillAdvancedSearchForm.script_type
-  if (skillAdvancedSearchForm.status) params.status = skillAdvancedSearchForm.status
-
-  skillApi.getList(params).then(res => {
-    skillList.value = res.data?.items || []
-    showSkillAdvancedSearch.value = false
-  })
-}
-
-function handleResetSkillAdvancedSearch() {
-  Object.assign(skillAdvancedSearchForm, {
-    name: '',
-    mcp_id: null,
-    script_type: '',
-    status: ''
-  })
-}
-
-// Tab 切换
-function handleTabChange() {
-  if (activeTab.value === 'skill') {
-    loadSkills()
-  } else {
-    loadMCPServers()
-  }
-}
-
 onMounted(() => {
   loadMCPServers()
 })
@@ -1580,25 +1120,21 @@ onMounted(() => {
   transition: transform 0.3s;
 }
 
-.mcp-skills-page {
+.mcp-servers-page {
   padding: var(--space-6);
   height: 100%;
   overflow-y: auto;
 }
 
-.mcp-skills-page :deep(.el-card) {
+.mcp-servers-page :deep(.el-card) {
   background: var(--color-surface);
   border: none;
   border-radius: var(--radius-lg);
   box-shadow: none;
 }
 
-.mcp-skills-page :deep(.el-card__body) {
+.mcp-servers-page :deep(.el-card__body) {
   padding: var(--space-5);
-}
-
-.mcp-tabs :deep(.el-tabs__content) {
-  padding-top: var(--space-5);
 }
 
 /* 状态统计面板 */
@@ -1741,28 +1277,6 @@ onMounted(() => {
   color: var(--el-color-warning);
 }
 
-.status-indicator {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-
-.status-indicator.online {
-  background-color: #67c23a;
-  box-shadow: 0 0 0 2px rgba(103, 194, 58, 0.2);
-}
-
-.status-indicator.offline {
-  background-color: #f56c6c;
-  box-shadow: 0 0 0 2px rgba(245, 108, 108, 0.2);
-}
-
-.status-indicator.unknown {
-  background-color: #909399;
-  box-shadow: 0 0 0 2px rgba(144, 147, 153, 0.2);
-}
-
 .item-name {
   font-weight: 500;
 }
@@ -1787,7 +1301,7 @@ onMounted(() => {
   max-width: 180px;
 }
 
-.item-skills-count {
+.item-tools-count {
   margin-left: auto;
   font-size: 12px;
   color: var(--color-text-secondary, #6b7280);
@@ -1993,30 +1507,11 @@ onMounted(() => {
   line-height: 1.6;
 }
 
-.tool-schema-section {
-  margin-top: var(--space-4);
-}
-
 .schema-title {
   font-size: 14px;
   font-weight: 500;
   margin-bottom: var(--space-2);
   color: var(--color-text-primary, #303133);
-}
-
-.schema-content {
-  margin-bottom: var(--space-3);
-}
-
-.schema-code {
-  padding: var(--space-3);
-  background: var(--color-bg, #fff);
-  border: 1px solid var(--color-border, #e5e7eb);
-  border-radius: var(--radius-sm);
-  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-  font-size: 12px;
-  line-height: 1.5;
-  overflow-x: auto;
 }
 
 .schema-params-table {
@@ -2087,17 +1582,6 @@ onMounted(() => {
   word-break: break-all;
 }
 
-/* Toolbar */
-.toolbar {
-  display: flex;
-  gap: var(--space-3);
-  margin-bottom: var(--space-4);
-}
-
-.search-input {
-  width: 240px;
-}
-
 /* Code editor */
 .code-editor {
   font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
@@ -2121,14 +1605,5 @@ onMounted(() => {
   color: var(--color-text-secondary, #909399);
   font-size: 12px;
   margin-top: 4px;
-}
-
-.execution-result {
-  background: #f5f5f5;
-  padding: var(--space-4);
-  border-radius: var(--radius-md);
-  font-size: 13px;
-  max-height: 400px;
-  overflow-y: auto;
 }
 </style>
