@@ -126,9 +126,15 @@ def auto_upgrade_database():
             logger.error(f"Database upgrade error: {error_msg}")
             logger.error(f"Traceback: {traceback.format_exc()}")
 
-            # 多头错误是预期的，记录为INFO
+            # 多头错误时，尝试升级到所有head
             if "Multiple head revisions" in error_msg:
-                logger.info("Multiple migration heads detected, skipping auto-upgrade")
+                logger.info("Multiple migration heads detected, attempting to upgrade to all heads...")
+                try:
+                    command.upgrade(alembic_cfg, 'heads')
+                    logger.info("Database upgraded to all heads successfully")
+                except Exception as heads_error:
+                    logger.error(f"Failed to upgrade to all heads: {heads_error}")
+                    logger.info("Multiple migration heads detected, skipping auto-upgrade")
             elif "Table" in error_msg and "already exists" in error_msg:
                 logger.info("Tables already exist, database may have been initialized manually")
 
