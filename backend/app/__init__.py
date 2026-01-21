@@ -90,6 +90,7 @@ def auto_upgrade_database():
     try:
         from alembic.config import Config
         from alembic import command
+        import traceback
 
         # 获取迁移目录的绝对路径
         migrations_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'migrations')
@@ -104,29 +105,37 @@ def auto_upgrade_database():
         alembic_cfg.set_main_option('sqlalchemy.url', db.engine.url.render_as_string(hide_password=False))
         alembic_cfg.set_main_option('script_location', migrations_dir)
 
+        logger.info(f"Migrations directory: {migrations_dir}")
+
         # 获取当前版本
         try:
             current = command.current(alembic_cfg)
             logger.info(f"Current database version: {current}")
-        except Exception:
+        except Exception as e:
             current = None
-            logger.info("No database version found, this may be a new database")
+            logger.info(f"No database version found (may be new database): {e}")
 
         # 尝试升级数据库
         try:
+            logger.info("Attempting database upgrade...")
             command.upgrade(alembic_cfg, 'head')
             logger.info("Database auto-upgrade completed successfully")
         except Exception as upgrade_error:
             error_msg = str(upgrade_error)
+            logger.error(f"Database upgrade error type: {type(upgrade_error).__name__}")
+            logger.error(f"Database upgrade error: {error_msg}")
+            logger.error(f"Traceback: {traceback.format_exc()}")
+
             # 多头错误是预期的，记录为INFO
             if "Multiple head revisions" in error_msg:
                 logger.info("Multiple migration heads detected, skipping auto-upgrade")
             elif "Table" in error_msg and "already exists" in error_msg:
                 logger.info("Tables already exist, database may have been initialized manually")
-            else:
-                logger.error(f"Database auto-upgrade failed: {error_msg}")
 
     except Exception as e:
         logger.error(f"Database auto-upgrade error: {e}")
-        # 不抛出异常，允许应用继续运行
+        logger.error(f"Error type: {type(e).__name__}")
+        logger.error(f"Error args: {e.args}")
+        import traceback
+        logger.error(f"Traceback: {traceback.format_exc()}")
 
