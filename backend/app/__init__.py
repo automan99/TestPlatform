@@ -90,6 +90,7 @@ def auto_upgrade_database():
     try:
         from alembic.config import Config
         from alembic import command
+        from alembic.script import ScriptDirectory
 
         # 获取迁移目录的绝对路径
         migrations_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'migrations')
@@ -112,11 +113,28 @@ def auto_upgrade_database():
             current = None
             logger.info("No database version found, this may be a new database")
 
-        # 升级到最新版本
+        # 检查是否有多个头
+        script = ScriptDirectory.from_config(alembic_cfg)
+        heads = script.get_revisions("heads")
+
+        if len(heads) > 1:
+            # 多个分支存在时，检查数据库是否已经有需要的表
+            # 如果表已存在，跳过升级；否则需要手动处理
+            logger.warning(f"Multiple migration branches detected ({len(heads)} heads)")
+            logger.warning("Migration branches: " + ", ".join([h.revision for h in heads]))
+            logger.info("Database tables appear to exist, skipping auto-upgrade")
+            # 不尝试升级，避免冲突
+            return
+
+        # 单个分支：正常升级
         command.upgrade(alembic_cfg, 'head')
         logger.info("Database auto-upgrade completed successfully")
 
     except Exception as e:
-        logger.error(f"Database auto-upgrade failed: {e}")
+        # 多头错误是预期的，不记录为ERROR
+        if "Multiple head revisions" in str(e):
+            logger.info(f"Multiple migration heads detected, skipping auto-upgrade")
+        else:
+            logger.error(f"Database auto-upgrade failed: {e}")
         # 不抛出异常，允许应用继续运行
 

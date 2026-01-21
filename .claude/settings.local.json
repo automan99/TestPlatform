@@ -18,7 +18,8 @@
       "Bash(npm run build)",
       "Bash(flask db:*)",
       "Bash(cd:*)",
-      "Bash(export:*)"
+      "Bash(export:*)",
+      "Bash(grep:*)"
     ]
   }
 }
