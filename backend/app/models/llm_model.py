@@ -10,7 +10,7 @@ class LLMModel(db.Model):
     """LLM模型配置"""
     __tablename__ = 'llm_models'
 
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True, comment='主键ID')
     # 基本信息
     name = db.Column(db.String(100), nullable=False, comment='模型名称')
     provider = db.Column(db.String(50), nullable=False, comment='提供商: openai, anthropic, azure, etc.')

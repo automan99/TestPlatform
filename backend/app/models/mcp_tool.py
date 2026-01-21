@@ -9,50 +9,50 @@ class MCPServer(db.Model):
     """MCP Server模型"""
     __tablename__ = 'mcp_servers'
 
-    id = db.Column(db.Integer, primary_key=True)
-    tenant_id = db.Column(db.Integer, db.ForeignKey('tenants.id'), nullable=True, index=True)
+    id = db.Column(db.Integer, primary_key=True, comment='主键ID')
+    tenant_id = db.Column(db.Integer, db.ForeignKey('tenants.id'), nullable=True, index=True, comment='租户ID')
 
     # 基础信息
-    name = db.Column(db.String(200), nullable=False)
-    code = db.Column(db.String(50), unique=True, index=True)
+    name = db.Column(db.String(200), nullable=False, comment='服务器名称')
+    code = db.Column(db.String(50), unique=True, index=True, comment='服务器代码')
 
     # 传输类型
-    transport_type = db.Column(db.String(20), default='stdio')  # stdio, sse, http
+    transport_type = db.Column(db.String(20), default='stdio', comment='传输类型: stdio, sse, http')
 
     # 命令配置（用于 stdio 类型）
-    command = db.Column(db.String(500))  # 执行命令，如 npx, python, /path/to/server
-    arguments = db.Column(db.Text)  # JSON数组格式的参数，如 ["--port", "3000"]
-    env = db.Column(db.Text)  # JSON对象格式的环境变量，如 {"API_KEY": "xxx"}
+    command = db.Column(db.String(500), comment='执行命令，如 npx, python, /path/to/server')
+    arguments = db.Column(db.Text, comment='JSON数组格式的参数，如 ["--port", "3000"]')
+    env = db.Column(db.Text, comment='JSON对象格式的环境变量，如 {"API_KEY": "xxx"}')
 
     # 连接配置（用于 sse/http 类型）
-    url = db.Column(db.String(500))  # SSE/HTTP 端点URL
+    url = db.Column(db.String(500), comment='SSE/HTTP 端点URL')
 
     # 超时配置
-    timeout = db.Column(db.Integer, default=30)  # 超时时间（秒）
+    timeout = db.Column(db.Integer, default=30, comment='超时时间（秒）')
 
     # 状态管理
-    status = db.Column(db.String(20), default='active')  # active, inactive, error
-    is_enabled = db.Column(db.Boolean, default=True)
-    is_builtin = db.Column(db.Boolean, default=False)  # 是否为内置MCP Server
+    status = db.Column(db.String(20), default='active', comment='状态: active, inactive, error')
+    is_enabled = db.Column(db.Boolean, default=True, comment='是否启用')
+    is_builtin = db.Column(db.Boolean, default=False, comment='是否为内置MCP Server')
 
     # 元数据
-    tags = db.Column(db.String(500))
+    tags = db.Column(db.String(500), comment='标签')
 
     # 统计
-    usage_count = db.Column(db.Integer, default=0)
-    tools_count = db.Column(db.Integer, default=0)  # MCP提供的工具数量
-    resources_count = db.Column(db.Integer, default=0)  # MCP提供的资源数量
-    last_sync_at = db.Column(db.DateTime)  # 最后同步时间
-    last_used_at = db.Column(db.DateTime)
+    usage_count = db.Column(db.Integer, default=0, comment='使用次数')
+    tools_count = db.Column(db.Integer, default=0, comment='MCP提供的工具数量')
+    resources_count = db.Column(db.Integer, default=0, comment='MCP提供的资源数量')
+    last_sync_at = db.Column(db.DateTime, comment='最后同步时间')
+    last_used_at = db.Column(db.DateTime, comment='最后使用时间')
 
     # 软删除
-    is_deleted = db.Column(db.Boolean, default=False)
+    is_deleted = db.Column(db.Boolean, default=False, comment='是否删除')
 
     # 时间戳
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    created_by = db.Column(db.String(100))
-    updated_by = db.Column(db.String(100))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, comment='创建时间')
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, comment='更新时间')
+    created_by = db.Column(db.String(100), comment='创建人')
+    updated_by = db.Column(db.String(100), comment='更新人')
 
     # 关系
     tenant = db.relationship('Tenant', backref='mcp_servers')
@@ -97,21 +97,21 @@ class MCPTool(db.Model):
     """MCP工具模型"""
     __tablename__ = 'mcp_tools'
 
-    id = db.Column(db.Integer, primary_key=True)
-    mcp_id = db.Column(db.Integer, db.ForeignKey('mcp_servers.id'), nullable=False, index=True)
+    id = db.Column(db.Integer, primary_key=True, comment='主键ID')
+    mcp_id = db.Column(db.Integer, db.ForeignKey('mcp_servers.id'), nullable=False, index=True, comment='MCP服务器ID')
 
     # 工具信息
-    name = db.Column(db.String(200), nullable=False)
-    description = db.Column(db.Text)
-    input_schema = db.Column(db.Text)  # JSON格式的输入schema
+    name = db.Column(db.String(200), nullable=False, comment='工具名称')
+    description = db.Column(db.Text, comment='工具描述')
+    input_schema = db.Column(db.Text, comment='JSON格式的输入schema')
 
     # 统计
-    usage_count = db.Column(db.Integer, default=0)
-    last_used_at = db.Column(db.DateTime)
+    usage_count = db.Column(db.Integer, default=0, comment='使用次数')
+    last_used_at = db.Column(db.DateTime, comment='最后使用时间')
 
     # 时间戳
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, comment='创建时间')
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, comment='更新时间')
 
     # 关系
     executions = db.relationship('MCPToolExecution', backref='tool', lazy='dynamic',
@@ -136,18 +136,18 @@ class MCPResource(db.Model):
     """MCP资源模型"""
     __tablename__ = 'mcp_resources'
 
-    id = db.Column(db.Integer, primary_key=True)
-    mcp_id = db.Column(db.Integer, db.ForeignKey('mcp_servers.id'), nullable=False, index=True)
+    id = db.Column(db.Integer, primary_key=True, comment='主键ID')
+    mcp_id = db.Column(db.Integer, db.ForeignKey('mcp_servers.id'), nullable=False, index=True, comment='MCP服务器ID')
 
     # 资源信息
-    uri = db.Column(db.String(500), nullable=False)
-    name = db.Column(db.String(200))
-    description = db.Column(db.Text)
-    mime_type = db.Column(db.String(100))
+    uri = db.Column(db.String(500), nullable=False, comment='资源URI')
+    name = db.Column(db.String(200), comment='资源名称')
+    description = db.Column(db.Text, comment='资源描述')
+    mime_type = db.Column(db.String(100), comment='MIME类型')
 
     # 时间戳
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, comment='创建时间')
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, comment='更新时间')
 
     def to_dict(self):
         """转换为字典"""
@@ -167,18 +167,18 @@ class MCPToolExecution(db.Model):
     """MCP工具执行记录"""
     __tablename__ = 'mcp_tool_executions'
 
-    id = db.Column(db.Integer, primary_key=True)
-    tool_id = db.Column(db.Integer, db.ForeignKey('mcp_tools.id'), nullable=False, index=True)
+    id = db.Column(db.Integer, primary_key=True, comment='主键ID')
+    tool_id = db.Column(db.Integer, db.ForeignKey('mcp_tools.id'), nullable=False, index=True, comment='工具ID')
 
     # 执行信息
-    parameters = db.Column(db.Text)  # JSON格式的参数
-    result = db.Column(db.Text)  # JSON格式的结果
-    status = db.Column(db.String(20), default='success')  # success, error
-    error_message = db.Column(db.Text)
-    execution_time = db.Column(db.Float)  # 执行时间（秒）
+    parameters = db.Column(db.Text, comment='JSON格式的参数')
+    result = db.Column(db.Text, comment='JSON格式的结果')
+    status = db.Column(db.String(20), default='success', comment='状态: success, error')
+    error_message = db.Column(db.Text, comment='错误消息')
+    execution_time = db.Column(db.Float, comment='执行时间（秒）')
 
     # 时间戳
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, comment='创建时间')
 
     def to_dict(self):
         """转换为字典"""

@@ -9,24 +9,24 @@ class TestPlan(db.Model):
     """测试计划模型"""
     __tablename__ = 'test_plans'
 
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(200), nullable=False)
-    plan_no = db.Column(db.String(50), unique=True)  # 计划编号
-    description = db.Column(db.Text)
-    project_id = db.Column(db.Integer, nullable=True, index=True)
-    folder_id = db.Column(db.Integer, db.ForeignKey('test_plan_folders.id'), nullable=True)  # 所属目录
-    start_date = db.Column(db.Date)
-    end_date = db.Column(db.Date)
-    status = db.Column(db.String(20), default='draft')  # draft, active, completed, cancelled, archived
-    priority = db.Column(db.String(20), default='medium')  # low, medium, high
-    build_version = db.Column(db.String(100))  # 测试版本
-    target_environment_id = db.Column(db.Integer, db.ForeignKey('test_environments.id'), nullable=True)
-    assigned_to = db.Column(db.String(100))  # 指派给
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    created_by = db.Column(db.String(100))
-    updated_by = db.Column(db.String(100))
-    is_deleted = db.Column(db.Boolean, default=False)
+    id = db.Column(db.Integer, primary_key=True, comment='主键ID')
+    name = db.Column(db.String(200), nullable=False, comment='计划名称')
+    plan_no = db.Column(db.String(50), unique=True, comment='计划编号')
+    description = db.Column(db.Text, comment='描述')
+    project_id = db.Column(db.Integer, nullable=True, index=True, comment='所属项目ID')
+    folder_id = db.Column(db.Integer, db.ForeignKey('test_plan_folders.id'), nullable=True, comment='所属目录ID')
+    start_date = db.Column(db.Date, comment='开始日期')
+    end_date = db.Column(db.Date, comment='结束日期')
+    status = db.Column(db.String(20), default='draft', comment='状态: draft, active, completed, cancelled, archived')
+    priority = db.Column(db.String(20), default='medium', comment='优先级: low, medium, high')
+    build_version = db.Column(db.String(100), comment='测试版本')
+    target_environment_id = db.Column(db.Integer, db.ForeignKey('test_environments.id'), nullable=True, comment='目标环境ID')
+    assigned_to = db.Column(db.String(100), comment='指派给')
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, comment='创建时间')
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, comment='更新时间')
+    created_by = db.Column(db.String(100), comment='创建人')
+    updated_by = db.Column(db.String(100), comment='更新人')
+    is_deleted = db.Column(db.Boolean, default=False, comment='是否删除')
 
     # 关系
     test_plan_cases = db.relationship('TestPlanCase', backref='test_plan', lazy='dynamic',
@@ -83,13 +83,13 @@ class TestPlanCase(db.Model):
     """测试计划用例关联模型"""
     __tablename__ = 'test_plan_cases'
 
-    id = db.Column(db.Integer, primary_key=True)
-    test_plan_id = db.Column(db.Integer, db.ForeignKey('test_plans.id'), nullable=False)
-    test_case_id = db.Column(db.Integer, db.ForeignKey('test_cases.id'), nullable=False)
-    assignee = db.Column(db.String(100))  # 分配给谁执行
-    sort_order = db.Column(db.Integer, default=0)
-    last_status = db.Column(db.String(20), default='not_executed')  # 最后一次执行状态
-    last_execution_id = db.Column(db.Integer)  # 最后一次执行记录ID
+    id = db.Column(db.Integer, primary_key=True, comment='主键ID')
+    test_plan_id = db.Column(db.Integer, db.ForeignKey('test_plans.id'), nullable=False, comment='测试计划ID')
+    test_case_id = db.Column(db.Integer, db.ForeignKey('test_cases.id'), nullable=False, comment='测试用例ID')
+    assignee = db.Column(db.String(100), comment='分配给谁执行')
+    sort_order = db.Column(db.Integer, default=0, comment='排序号')
+    last_status = db.Column(db.String(20), default='not_executed', comment='最后一次执行状态')
+    last_execution_id = db.Column(db.Integer, comment='最后一次执行记录ID')
 
     # 关系
     test_case = db.relationship('TestCase', backref='test_plan_cases')
@@ -114,19 +114,19 @@ class TestExecution(db.Model):
     """测试执行记录模型"""
     __tablename__ = 'test_executions'
 
-    id = db.Column(db.Integer, primary_key=True)
-    test_plan_id = db.Column(db.Integer, db.ForeignKey('test_plans.id'), nullable=True)
-    test_case_id = db.Column(db.Integer, db.ForeignKey('test_cases.id'), nullable=False)
-    test_plan_case_id = db.Column(db.Integer, db.ForeignKey('test_plan_cases.id'), nullable=True)
-    status = db.Column(db.String(20), default='not_executed')  # passed, failed, blocked, skipped, not_executed
-    execution_time = db.Column(db.DateTime, default=datetime.utcnow)
-    executed_by = db.Column(db.String(100))
-    actual_result = db.Column(db.Text)
-    notes = db.Column(db.Text)
-    duration = db.Column(db.Integer)  # 执行时长(秒)
-    environment_id = db.Column(db.Integer, db.ForeignKey('test_environments.id'), nullable=True)
-    screenshots = db.Column(db.Text)  # 截图路径 (JSON数组)
-    defect_ids = db.Column(db.Text)  # 关联的缺陷ID列表 (JSON数组)
+    id = db.Column(db.Integer, primary_key=True, comment='主键ID')
+    test_plan_id = db.Column(db.Integer, db.ForeignKey('test_plans.id'), nullable=True, comment='测试计划ID')
+    test_case_id = db.Column(db.Integer, db.ForeignKey('test_cases.id'), nullable=False, comment='测试用例ID')
+    test_plan_case_id = db.Column(db.Integer, db.ForeignKey('test_plan_cases.id'), nullable=True, comment='测试计划用例关联ID')
+    status = db.Column(db.String(20), default='not_executed', comment='状态: passed, failed, blocked, skipped, not_executed')
+    execution_time = db.Column(db.DateTime, default=datetime.utcnow, comment='执行时间')
+    executed_by = db.Column(db.String(100), comment='执行人')
+    actual_result = db.Column(db.Text, comment='实际结果')
+    notes = db.Column(db.Text, comment='备注')
+    duration = db.Column(db.Integer, comment='执行时长(秒)')
+    environment_id = db.Column(db.Integer, db.ForeignKey('test_environments.id'), nullable=True, comment='环境ID')
+    screenshots = db.Column(db.Text, comment='截图路径(JSON数组)')
+    defect_ids = db.Column(db.Text, comment='关联的缺陷ID列表(JSON数组)')
 
     # 关系
     environment = db.relationship('TestEnvironment', backref='executions')
@@ -154,16 +154,16 @@ class TestPlanFolder(db.Model):
     """测试计划目录模型"""
     __tablename__ = 'test_plan_folders'
 
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(200), nullable=False)
-    project_id = db.Column(db.Integer, nullable=False, index=True)
-    parent_id = db.Column(db.Integer, db.ForeignKey('test_plan_folders.id'), nullable=True)
-    description = db.Column(db.Text)
-    sort_order = db.Column(db.Integer, default=0)
-    is_deleted = db.Column(db.Boolean, default=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    created_by = db.Column(db.String(100))
+    id = db.Column(db.Integer, primary_key=True, comment='主键ID')
+    name = db.Column(db.String(200), nullable=False, comment='目录名称')
+    project_id = db.Column(db.Integer, nullable=False, index=True, comment='所属项目ID')
+    parent_id = db.Column(db.Integer, db.ForeignKey('test_plan_folders.id'), nullable=True, comment='父级目录ID')
+    description = db.Column(db.Text, comment='描述')
+    sort_order = db.Column(db.Integer, default=0, comment='排序号')
+    is_deleted = db.Column(db.Boolean, default=False, comment='是否删除')
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, comment='创建时间')
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, comment='更新时间')
+    created_by = db.Column(db.String(100), comment='创建人')
 
     # 关系
     children = db.relationship('TestPlanFolder', backref=db.backref('parent', remote_side=[id]),

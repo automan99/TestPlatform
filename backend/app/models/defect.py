@@ -10,18 +10,18 @@ class DefectWorkflow(db.Model):
     """缺陷工作流状态模型 - 定义自定义状态流程"""
     __tablename__ = 'defect_workflows'
 
-    id = db.Column(db.Integer, primary_key=True)
-    project_id = db.Column(db.Integer, nullable=True, index=True)
-    name = db.Column(db.String(100), nullable=False)  # 状态名称
-    code = db.Column(db.String(50), nullable=False)  # 状态代码
-    description = db.Column(db.Text)
-    color = db.Column(db.String(20), default='#666666')  # 状态显示颜色
-    sort_order = db.Column(db.Integer, default=0)
-    is_default = db.Column(db.Boolean, default=False)  # 是否为默认状态
-    is_closed = db.Column(db.Boolean, default=False)  # 是否为关闭状态
-    transitions = db.Column(db.Text)  # 可转换到的状态 (JSON数组)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    id = db.Column(db.Integer, primary_key=True, comment='主键ID')
+    project_id = db.Column(db.Integer, nullable=True, index=True, comment='所属项目ID')
+    name = db.Column(db.String(100), nullable=False, comment='状态名称')
+    code = db.Column(db.String(50), nullable=False, comment='状态代码')
+    description = db.Column(db.Text, comment='描述')
+    color = db.Column(db.String(20), default='#666666', comment='状态显示颜色')
+    sort_order = db.Column(db.Integer, default=0, comment='排序号')
+    is_default = db.Column(db.Boolean, default=False, comment='是否为默认状态')
+    is_closed = db.Column(db.Boolean, default=False, comment='是否为关闭状态')
+    transitions = db.Column(db.Text, comment='可转换到的状态(JSON数组)')
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, comment='创建时间')
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, comment='更新时间')
 
     __table_args__ = (db.UniqueConstraint('project_id', 'code', name='unique_project_code'),)
 
@@ -47,66 +47,66 @@ class Defect(db.Model):
     """缺陷模型"""
     __tablename__ = 'defects'
 
-    id = db.Column(db.Integer, primary_key=True)
-    defect_no = db.Column(db.String(50), unique=True)  # 缺陷编号
-    title = db.Column(db.String(500), nullable=False)
-    description = db.Column(db.Text)
-    project_id = db.Column(db.Integer, nullable=True, index=True)
+    id = db.Column(db.Integer, primary_key=True, comment='主键ID')
+    defect_no = db.Column(db.String(50), unique=True, comment='缺陷编号')
+    title = db.Column(db.String(500), nullable=False, comment='缺陷标题')
+    description = db.Column(db.Text, comment='缺陷描述')
+    project_id = db.Column(db.Integer, nullable=True, index=True, comment='所属项目ID')
 
     # 关联信息
-    test_case_id = db.Column(db.Integer, db.ForeignKey('test_cases.id'), nullable=True)
-    test_execution_id = db.Column(db.Integer, db.ForeignKey('test_executions.id'), nullable=True)
-    test_plan_id = db.Column(db.Integer, db.ForeignKey('test_plans.id'), nullable=True)
-    module_id = db.Column(db.Integer, db.ForeignKey('defect_modules.id'), nullable=True, index=True)
+    test_case_id = db.Column(db.Integer, db.ForeignKey('test_cases.id'), nullable=True, comment='关联测试用例ID')
+    test_execution_id = db.Column(db.Integer, db.ForeignKey('test_executions.id'), nullable=True, comment='关联测试执行ID')
+    test_plan_id = db.Column(db.Integer, db.ForeignKey('test_plans.id'), nullable=True, comment='关联测试计划ID')
+    module_id = db.Column(db.Integer, db.ForeignKey('defect_modules.id'), nullable=True, index=True, comment='所属模块ID')
 
     # 缺陷属性
-    severity = db.Column(db.String(20), default='medium')  # 严重程度: critical, high, medium, low, trivial
-    priority = db.Column(db.String(20), default='medium')  # 优先级: urgent, high, medium, low
-    status_id = db.Column(db.Integer, db.ForeignKey('defect_workflows.id'), nullable=True)
-    status = db.Column(db.String(50), default='new')  # 状态冗余字段，便于查询
+    severity = db.Column(db.String(20), default='medium', comment='严重程度: critical, high, medium, low, trivial')
+    priority = db.Column(db.String(20), default='medium', comment='优先级: urgent, high, medium, low')
+    status_id = db.Column(db.Integer, db.ForeignKey('defect_workflows.id'), nullable=True, comment='状态ID')
+    status = db.Column(db.String(50), default='new', comment='状态冗余字段，便于查询')
 
     # 分类
-    defect_type = db.Column(db.String(50), default='bug')  # bug, feature, improvement, task
-    category = db.Column(db.String(100))  # 缺陷分类
-    reproduction_steps = db.Column(db.Text)  # 复现步骤
-    expected_behavior = db.Column(db.Text)  # 期望行为
-    actual_behavior = db.Column(db.Text)  # 实际行为
+    defect_type = db.Column(db.String(50), default='bug', comment='缺陷类型: bug, feature, improvement, task')
+    category = db.Column(db.String(100), comment='缺陷分类')
+    reproduction_steps = db.Column(db.Text, comment='复现步骤')
+    expected_behavior = db.Column(db.Text, comment='期望行为')
+    actual_behavior = db.Column(db.Text, comment='实际行为')
 
     # 环境信息
-    environment = db.Column(db.String(100))
-    browser = db.Column(db.String(100))
-    os = db.Column(db.String(100))
+    environment = db.Column(db.String(100), comment='测试环境')
+    browser = db.Column(db.String(100), comment='浏览器')
+    os = db.Column(db.String(100), comment='操作系统')
 
     # 分配与处理
-    assigned_to = db.Column(db.String(100))  # 分配给
-    reported_by = db.Column(db.String(100))  # 报告人
-    fixed_by = db.Column(db.String(100))  # 修复人
-    verified_by = db.Column(db.String(100))  # 验证人
+    assigned_to = db.Column(db.String(100), comment='分配给')
+    reported_by = db.Column(db.String(100), comment='报告人')
+    fixed_by = db.Column(db.String(100), comment='修复人')
+    verified_by = db.Column(db.String(100), comment='验证人')
 
     # 时间信息
-    reported_date = db.Column(db.DateTime, default=datetime.utcnow)
-    assigned_date = db.Column(db.DateTime)
-    start_date = db.Column(db.DateTime)  # 开始处理日期
-    due_date = db.Column(db.Date)  # 期望解决日期
-    resolved_date = db.Column(db.DateTime)  # 解决日期
-    closed_date = db.Column(db.DateTime)  # 关闭日期
-    verified_date = db.Column(db.DateTime)  # 验证日期
+    reported_date = db.Column(db.DateTime, default=datetime.utcnow, comment='报告日期')
+    assigned_date = db.Column(db.DateTime, comment='分配日期')
+    start_date = db.Column(db.DateTime, comment='开始处理日期')
+    due_date = db.Column(db.Date, comment='期望解决日期')
+    resolved_date = db.Column(db.DateTime, comment='解决日期')
+    closed_date = db.Column(db.DateTime, comment='关闭日期')
+    verified_date = db.Column(db.DateTime, comment='验证日期')
 
     # 解决信息
-    resolution = db.Column(db.Text)  # 解决方案
-    resolution_version = db.Column(db.String(100))  # 解决版本
+    resolution = db.Column(db.Text, comment='解决方案')
+    resolution_version = db.Column(db.String(100), comment='解决版本')
 
     # 附件与标签
-    attachments = db.Column(db.Text)  # 附件路径 (JSON数组)
-    tags = db.Column(db.String(500))
-    screenshots = db.Column(db.Text)  # 截图路径 (JSON数组)
+    attachments = db.Column(db.Text, comment='附件路径(JSON数组)')
+    tags = db.Column(db.String(500), comment='标签')
+    screenshots = db.Column(db.Text, comment='截图路径(JSON数组)')
 
     # 统计
-    view_count = db.Column(db.Integer, default=0)
-    comment_count = db.Column(db.Integer, default=0)
+    view_count = db.Column(db.Integer, default=0, comment='查看次数')
+    comment_count = db.Column(db.Integer, default=0, comment='评论数')
 
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, comment='创建时间')
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, comment='更新时间')
 
     # 关系
     status_obj = db.relationship('DefectWorkflow', backref='defects')
@@ -167,14 +167,14 @@ class DefectModule(db.Model):
     """缺陷模块模型"""
     __tablename__ = 'defect_modules'
 
-    id = db.Column(db.Integer, primary_key=True)
-    project_id = db.Column(db.Integer, nullable=True, index=True)
-    name = db.Column(db.String(100), nullable=False)
-    parent_id = db.Column(db.Integer, db.ForeignKey('defect_modules.id'), nullable=True)
-    description = db.Column(db.Text, nullable=True)
-    sort_order = db.Column(db.Integer, default=0)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    id = db.Column(db.Integer, primary_key=True, comment='主键ID')
+    project_id = db.Column(db.Integer, nullable=True, index=True, comment='所属项目ID')
+    name = db.Column(db.String(100), nullable=False, comment='模块名称')
+    parent_id = db.Column(db.Integer, db.ForeignKey('defect_modules.id'), nullable=True, comment='父级模块ID')
+    description = db.Column(db.Text, nullable=True, comment='描述')
+    sort_order = db.Column(db.Integer, default=0, comment='排序号')
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, comment='创建时间')
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, comment='更新时间')
 
     # 关系
     children = db.relationship('DefectModule',
@@ -199,14 +199,14 @@ class DefectComment(db.Model):
     """缺陷评论模型"""
     __tablename__ = 'defect_comments'
 
-    id = db.Column(db.Integer, primary_key=True)
-    defect_id = db.Column(db.Integer, db.ForeignKey('defects.id'), nullable=False)
-    content = db.Column(db.Text, nullable=False)
-    commented_by = db.Column(db.String(100))
-    is_internal = db.Column(db.Boolean, default=False)  # 是否为内部评论
-    attachments = db.Column(db.Text)  # 附件路径 (JSON数组)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    id = db.Column(db.Integer, primary_key=True, comment='主键ID')
+    defect_id = db.Column(db.Integer, db.ForeignKey('defects.id'), nullable=False, comment='缺陷ID')
+    content = db.Column(db.Text, nullable=False, comment='评论内容')
+    commented_by = db.Column(db.String(100), comment='评论人')
+    is_internal = db.Column(db.Boolean, default=False, comment='是否为内部评论')
+    attachments = db.Column(db.Text, comment='附件路径(JSON数组)')
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, comment='创建时间')
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, comment='更新时间')
 
     def to_dict(self):
         """转换为字典"""

@@ -9,57 +9,57 @@ class TestReport(db.Model):
     """测试报告模型"""
     __tablename__ = 'test_reports'
 
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(200), nullable=False)
-    report_no = db.Column(db.String(50), unique=True)  # 报告编号
-    report_type = db.Column(db.String(50), default='execution')  # execution, summary, trend, coverage
+    id = db.Column(db.Integer, primary_key=True, comment='主键ID')
+    name = db.Column(db.String(200), nullable=False, comment='报告名称')
+    report_no = db.Column(db.String(50), unique=True, comment='报告编号')
+    report_type = db.Column(db.String(50), default='execution', comment='报告类型: execution, summary, trend, coverage')
 
     # 关联信息
-    test_plan_id = db.Column(db.Integer, db.ForeignKey('test_plans.id'), nullable=True)
-    project_id = db.Column(db.Integer, nullable=True, index=True)
-    execution_id = db.Column(db.Integer, db.ForeignKey('test_executions.id'), nullable=True)
+    test_plan_id = db.Column(db.Integer, db.ForeignKey('test_plans.id'), nullable=True, comment='测试计划ID')
+    project_id = db.Column(db.Integer, nullable=True, index=True, comment='所属项目ID')
+    execution_id = db.Column(db.Integer, db.ForeignKey('test_executions.id'), nullable=True, comment='测试执行ID')
 
     # 报告数据
-    summary = db.Column(db.Text)  # 报告摘要 (JSON格式)
-    start_time = db.Column(db.DateTime)
-    end_time = db.Column(db.DateTime)
-    duration = db.Column(db.Integer)  # 执行时长(秒)
+    summary = db.Column(db.Text, comment='报告摘要(JSON格式)')
+    start_time = db.Column(db.DateTime, comment='开始时间')
+    end_time = db.Column(db.DateTime, comment='结束时间')
+    duration = db.Column(db.Integer, comment='执行时长(秒)')
 
     # 统计数据
-    total_cases = db.Column(db.Integer, default=0)
-    passed_cases = db.Column(db.Integer, default=0)
-    failed_cases = db.Column(db.Integer, default=0)
-    blocked_cases = db.Column(db.Integer, default=0)
-    skipped_cases = db.Column(db.Integer, default=0)
-    pass_rate = db.Column(db.Float, default=0.0)  # 通过率
-    execution_rate = db.Column(db.Float, default=0.0)  # 执行率
+    total_cases = db.Column(db.Integer, default=0, comment='总用例数')
+    passed_cases = db.Column(db.Integer, default=0, comment='通过用例数')
+    failed_cases = db.Column(db.Integer, default=0, comment='失败用例数')
+    blocked_cases = db.Column(db.Integer, default=0, comment='阻塞用例数')
+    skipped_cases = db.Column(db.Integer, default=0, comment='跳过用例数')
+    pass_rate = db.Column(db.Float, default=0.0, comment='通过率')
+    execution_rate = db.Column(db.Float, default=0.0, comment='执行率')
 
     # 缺陷统计
-    total_defects = db.Column(db.Integer, default=0)
-    critical_defects = db.Column(db.Integer, default=0)
-    high_defects = db.Column(db.Integer, default=0)
-    medium_defects = db.Column(db.Integer, default=0)
-    low_defects = db.Column(db.Integer, default=0)
+    total_defects = db.Column(db.Integer, default=0, comment='总缺陷数')
+    critical_defects = db.Column(db.Integer, default=0, comment='严重缺陷数')
+    high_defects = db.Column(db.Integer, default=0, comment='高危缺陷数')
+    medium_defects = db.Column(db.Integer, default=0, comment='中危缺陷数')
+    low_defects = db.Column(db.Integer, default=0, comment='低危缺陷数')
 
     # 环境信息
-    environment = db.Column(db.String(100))
-    build_version = db.Column(db.String(100))
+    environment = db.Column(db.String(100), comment='测试环境')
+    build_version = db.Column(db.String(100), comment='构建版本')
 
     # 报告配置
-    chart_config = db.Column(db.Text)  # 图表配置 (JSON格式)
-    template_id = db.Column(db.Integer)  # 报告模板ID
-    is_template = db.Column(db.Boolean, default=False)  # 是否为模板
+    chart_config = db.Column(db.Text, comment='图表配置(JSON格式)')
+    template_id = db.Column(db.Integer, comment='报告模板ID')
+    is_template = db.Column(db.Boolean, default=False, comment='是否为模板')
 
     # 状态
-    status = db.Column(db.String(20), default='completed')  # generating, completed, failed
-    generated_by = db.Column(db.String(100))
+    status = db.Column(db.String(20), default='completed', comment='状态: generating, completed, failed')
+    generated_by = db.Column(db.String(100), comment='生成人')
 
     # 导出
-    export_formats = db.Column(db.Text)  # 导出格式 (JSON数组) pdf, html, excel
-    export_path = db.Column(db.String(500))  # 导出文件路径
+    export_formats = db.Column(db.Text, comment='导出格式(JSON数组)')
+    export_path = db.Column(db.String(500), comment='导出文件路径')
 
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, comment='创建时间')
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, comment='更新时间')
 
     # 关系
     metrics = db.relationship('ReportMetric', backref='report', lazy='dynamic',
@@ -116,17 +116,17 @@ class ReportMetric(db.Model):
     """报告度量指标模型"""
     __tablename__ = 'report_metrics'
 
-    id = db.Column(db.Integer, primary_key=True)
-    report_id = db.Column(db.Integer, db.ForeignKey('test_reports.id'), nullable=False)
-    metric_name = db.Column(db.String(100), nullable=False)  # 指标名称
-    metric_key = db.Column(db.String(100), nullable=False)  # 指标键值
-    metric_value = db.Column(db.String(500))  # 指标值
-    metric_type = db.Column(db.String(50), default='string')  # string, number, percentage, chart
-    display_order = db.Column(db.Integer, default=0)
-    category = db.Column(db.String(100))  # 分类
-    description = db.Column(db.Text)
-    trend_data = db.Column(db.Text)  # 趋势数据 (JSON数组)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    id = db.Column(db.Integer, primary_key=True, comment='主键ID')
+    report_id = db.Column(db.Integer, db.ForeignKey('test_reports.id'), nullable=False, comment='报告ID')
+    metric_name = db.Column(db.String(100), nullable=False, comment='指标名称')
+    metric_key = db.Column(db.String(100), nullable=False, comment='指标键值')
+    metric_value = db.Column(db.String(500), comment='指标值')
+    metric_type = db.Column(db.String(50), default='string', comment='指标类型: string, number, percentage, chart')
+    display_order = db.Column(db.Integer, default=0, comment='显示顺序')
+    category = db.Column(db.String(100), comment='分类')
+    description = db.Column(db.Text, comment='描述')
+    trend_data = db.Column(db.Text, comment='趋势数据(JSON数组)')
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, comment='创建时间')
 
     def to_dict(self):
         """转换为字典"""
