@@ -22,55 +22,38 @@
         router
         class="sidebar-menu"
       >
-        <el-menu-item index="/dashboard" class="nav-item">
-          <el-icon><House /></el-icon>
-          <template #title>{{ t('menu.home') }}</template>
-        </el-menu-item>
-
-        <el-menu-item index="/test-cases" class="nav-item">
-          <el-icon><Document /></el-icon>
-          <template #title>{{ t('menu.testCases') }}</template>
-        </el-menu-item>
-
-        <el-menu-item index="/test-plans" class="nav-item">
-          <el-icon><Calendar /></el-icon>
-          <template #title>{{ t('menu.testPlans') }}</template>
-        </el-menu-item>
-
-        <el-menu-item index="/environments" class="nav-item">
-          <el-icon><Monitor /></el-icon>
-          <template #title>{{ t('menu.environments') }}</template>
-        </el-menu-item>
-
-        <el-menu-item index="/defects" class="nav-item">
-          <el-icon><CircleClose /></el-icon>
-          <template #title>{{ t('menu.defects') }}</template>
-        </el-menu-item>
-
-        <el-menu-item index="/mcp-server" class="nav-item">
-          <el-icon><Connection /></el-icon>
-          <template #title>MCP Server</template>
-        </el-menu-item>
-
-        <el-menu-item index="/skills" class="nav-item">
-          <el-icon><Files /></el-icon>
-          <template #title>Agent Skills</template>
-        </el-menu-item>
-
-        <el-menu-item index="/reports" class="nav-item">
-          <el-icon><DataAnalysis /></el-icon>
-          <template #title>{{ t('menu.reports') }}</template>
-        </el-menu-item>
-
-        <el-menu-item index="/projects" class="nav-item">
-          <el-icon><FolderOpened /></el-icon>
-          <template #title>{{ t('project.title') }}</template>
-        </el-menu-item>
-
-        <el-menu-item index="/settings" class="nav-item">
-          <el-icon><Setting /></el-icon>
-          <template #title>{{ t('menu.settings') }}</template>
-        </el-menu-item>
+        <template v-for="menu in menuList" :key="menu.code">
+          <!-- 有子菜单的情况 -->
+          <el-sub-menu v-if="menu.children && menu.children.length > 0" :index="menu.code">
+            <template #title>
+              <el-icon>
+                <component :is="iconMap[menu.icon]" />
+              </el-icon>
+              <span>{{ menu.title }}</span>
+            </template>
+            <el-menu-item
+              v-for="child in menu.children"
+              :key="child.code"
+              :index="child.path"
+            >
+              <el-icon>
+                <component :is="iconMap[child.icon]" />
+              </el-icon>
+              <template #title>{{ child.title }}</template>
+            </el-menu-item>
+          </el-sub-menu>
+          <!-- 无子菜单的情况 -->
+          <el-menu-item
+            v-else
+            :index="menu.path"
+            class="nav-item"
+          >
+            <el-icon>
+              <component :is="iconMap[menu.icon]" />
+            </el-icon>
+            <template #title>{{ menu.title }}</template>
+          </el-menu-item>
+        </template>
       </el-menu>
 
       <!-- Sidebar Footer -->
@@ -212,11 +195,12 @@ import { useAppStore } from '@/store'
 import { useI18n } from '@/i18n'
 import { useTenantStore } from '@/store/tenant'
 import { useProjectStore } from '@/store/project'
+import { useMenuStore } from '@/store/menu'
 import { ElMessage } from 'element-plus'
 import {
   Monitor, House, Document, Calendar, CircleClose,
   DataAnalysis, Setting, Expand, Fold, User, OfficeBuilding,
-  ArrowDown, FolderOpened, SwitchButton, Connection, Files
+  ArrowDown, FolderOpened, SwitchButton, Connection, Files, Menu, UserFilled, Operation, Bell
 } from '@element-plus/icons-vue'
 
 const route = useRoute()
@@ -225,6 +209,30 @@ const appStore = useAppStore()
 const { t } = useI18n()
 const tenantStore = useTenantStore()
 const projectStore = useProjectStore()
+const menuStore = useMenuStore()
+
+// 动态菜单
+const menuList = computed(() => menuStore.userMenus)
+
+// 图标映射
+const iconMap = {
+  House,
+  Document,
+  Calendar,
+  Monitor,
+  CircleClose,
+  DataAnalysis,
+  Setting,
+  FolderOpened,
+  Connection,
+  Files,
+  OfficeBuilding,
+  Menu,
+  User,
+  UserFilled,
+  Operation,
+  Bell
+}
 
 // System name
 const systemName = ref(t('dashboard.title'))
@@ -299,6 +307,9 @@ onMounted(async () => {
       }
     }
   }
+
+  // 加载用户菜单
+  await menuStore.loadUserMenus()
 
   try {
     await tenantStore.loadMyTenants()
@@ -477,6 +488,69 @@ onMounted(async () => {
 }
 
 :deep(.el-menu--collapse .nav-item span) {
+  display: none;
+}
+
+/* Sub Menu Styles */
+:deep(.el-sub-menu) {
+  margin-bottom: 2px;
+}
+
+:deep(.el-sub-menu__title) {
+  height: 40px;
+  line-height: 40px;
+  color: var(--sidebar-item-color, rgba(255, 255, 255, 0.6));
+  border-radius: var(--radius-md);
+  transition: all 0.15s ease;
+}
+
+:deep(.el-sub-menu__title:hover) {
+  background: var(--sidebar-item-hover-bg, rgba(255, 255, 255, 0.06));
+  color: var(--sidebar-item-hover-color, rgba(255, 255, 255, 0.9));
+}
+
+:deep(.el-sub-menu.is-opened > .el-sub-menu__title) {
+  color: var(--sidebar-item-active-color, #ffffff);
+  font-weight: 600;
+}
+
+/* 内嵌子菜单样式（非弹出） */
+:deep(.el-sub-menu .el-menu) {
+  background: transparent;
+}
+
+:deep(.el-sub-menu .el-menu-item) {
+  height: 36px;
+  line-height: 36px;
+  padding-left: 52px !important;
+  color: var(--sidebar-sub-item-color, rgba(255, 255, 255, 0.6));
+  background: transparent;
+  margin: 0 8px;
+  border-radius: var(--radius-sm);
+}
+
+:deep(.el-sub-menu .el-menu-item:hover) {
+  background: var(--sidebar-item-hover-bg, rgba(255, 255, 255, 0.08));
+  color: var(--sidebar-sub-item-hover-color, rgba(255, 255, 255, 0.85));
+}
+
+:deep(.el-sub-menu .el-menu-item.is-active) {
+  background: var(--sidebar-item-active-bg, rgba(99, 102, 241, 0.2));
+  color: #ffffff;
+}
+
+/* 子菜单箭头 */
+:deep(.el-sub-menu__icon-arrow) {
+  color: var(--sidebar-item-color, rgba(255, 255, 255, 0.5));
+  transition: transform 0.3s;
+}
+
+:deep(.el-sub-menu.is-opened > .el-sub-menu__title .el-sub-menu__icon-arrow) {
+  transform: rotate(180deg);
+}
+
+/* 折叠状态下隐藏嵌套菜单 */
+:deep(.el-menu--collapse .el-sub-menu .el-menu) {
   display: none;
 }
 

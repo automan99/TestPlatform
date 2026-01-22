@@ -13,6 +13,7 @@ from .mcp_tool import MCPServer, MCPTool, MCPResource, MCPToolExecution
 from .skill import Skill
 from .skill_repository import GitCredential, SkillRepository, GitSkill, SkillSyncLog
 from .llm_model import LLMModel
+from .menu import Menu, Role, RoleMenu, UserRole
 
 __all__ = [
     'Tenant', 'TenantUser', 'User',
@@ -24,5 +25,6 @@ __all__ = [
     'TestReport', 'ReportMetric',
     'MCPServer', 'MCPTool', 'MCPResource', 'MCPToolExecution', 'Skill',
     'GitCredential', 'SkillRepository', 'GitSkill', 'SkillSyncLog',
-    'LLMModel'
+    'LLMModel',
+    'Menu', 'Role', 'RoleMenu', 'UserRole'
 ]

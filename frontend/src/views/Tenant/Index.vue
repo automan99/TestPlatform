@@ -140,7 +140,8 @@
         <el-table-column prop="email" label="邮箱" />
         <el-table-column prop="role" label="角色" width="120">
           <template #default="{ row }">
-            <el-tag v-if="row.role === 'admin'" type="danger">管理员</el-tag>
+            <el-tag v-if="row.role === 'owner'" type="danger">所有者</el-tag>
+            <el-tag v-else-if="row.role === 'admin'" type="warning">管理员</el-tag>
             <el-tag v-else type="info">成员</el-tag>
           </template>
         </el-table-column>
@@ -176,8 +177,12 @@
         </el-form-item>
         <el-form-item label="角色" prop="role">
           <el-select v-model="memberForm.role" placeholder="选择角色" style="width: 100%">
-            <el-option label="成员" value="member" />
-            <el-option label="管理员" value="admin" />
+            <el-option
+              v-for="option in getAvailableRoleOptions()"
+              :key="option.value"
+              :label="option.label"
+              :value="option.value"
+            />
           </el-select>
         </el-form-item>
       </el-form>
@@ -215,6 +220,7 @@ const currentTenantId = ref(null)
 const tenantList = ref([])
 const memberList = ref([])
 const availableUsers = ref([])
+const currentUserRole = ref('') // 当前用户在当前租户中的角色
 
 const searchForm = reactive({
   keyword: '',
@@ -267,6 +273,23 @@ async function loadTenants() {
   })
   tenantList.value = res.data?.items || []
   pagination.total = res.data?.total || 0
+}
+
+// 获取可用角色选项
+function getAvailableRoleOptions() {
+  const user = appStore.user
+  // 超级管理员可以添加所有角色
+  if (user?.role === 'super_admin') {
+    return [
+      { label: '成员', value: 'member' },
+      { label: '管理员', value: 'admin' },
+      { label: '所有者', value: 'owner' }
+    ]
+  }
+  // 租户管理员只能添加普通成员
+  return [
+    { label: '成员', value: 'member' }
+  ]
 }
 
 function handleCreate() {

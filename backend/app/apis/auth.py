@@ -1,10 +1,12 @@
 """
 认证相关API
 """
-from flask import request, g
+from flask import request, g, current_app
 from flask_restx import Namespace, Resource, fields
-from app.models import Tenant, User
+from app.models import Tenant, User, TenantUser
 from app.utils.errors import success_response, error_response
+from app.utils.permissions import get_user_accessible_tenants
+from app.utils.jwt_utils import generate_token
 from datetime import datetime
 
 # 创建命名空间
@@ -46,23 +48,50 @@ class AuthLoginAPI(Resource):
         from app import db
         db.session.commit()
 
-        # 查询用户可访问的租户列表
-        # TODO: 从 tenant_users 表查询用户关联的租户
-        # 这里简化处理，返回所有激活的租户
-        tenants = Tenant.query.filter_by(
-            is_deleted=False,
-            is_active=True,
-            status='active'
-        ).all()
+        # 生成 JWT token
+        token = generate_token(user.id, user.username)
 
-        # 生成token（简化处理，实际应使用JWT）
-        token = f"token_{user.id}_{username}"
+        # 获取用户可访问的租户列表
+        tenants = get_user_accessible_tenants(user)
+
+        # 构建租户列表（包含角色信息）
+        tenant_list = []
+        for tenant in tenants:
+            tenant_dict = tenant.to_dict()
+            # 添加用户在该租户中的角色
+            if user.is_super_admin():
+                tenant_dict['user_role'] = 'super_admin'
+                tenant_dict['user_role_name'] = '超级管理员'
+            else:
+                tenant_user = TenantUser.query.filter_by(
+                    tenant_id=tenant.id,
+                    user_id=user.id,
+                    is_deleted=False
+                ).first()
+                if tenant_user:
+                    tenant_dict['user_role'] = tenant_user.role
+                    tenant_dict['user_role_name'] = self._get_role_name(tenant_user.role)
+            tenant_list.append(tenant_dict)
+
+        # 构建用户信息
+        user_info = user.to_dict()
+        user_info['tenants'] = tenant_list
 
         return success_response(data={
             'token': token,
-            'user': user.to_dict(),
-            'tenants': [tenant.to_dict() for tenant in tenants]
+            'user': user_info
         }, message='登录成功')
+
+    @staticmethod
+    def _get_role_name(role):
+        """获取角色名称"""
+        role_names = {
+            'super_admin': '超级管理员',
+            'owner': '所有者',
+            'admin': '管理员',
+            'member': '成员'
+        }
+        return role_names.get(role, role)
 
 
 @auth_ns.route('/tenants')
@@ -70,18 +99,35 @@ class AuthTenantsAPI(Resource):
     @auth_ns.doc('get_user_tenants')
     def get(self):
         """获取当前用户可访问的租户列表"""
-        # TODO: 从token或session中获取用户ID
-        # 这里简化处理
-        user_id = 1
+        from app.utils.permissions import get_current_user
 
-        # 查询用户可访问的租户列表
-        tenants = Tenant.query.filter_by(
-            is_deleted=False,
-            is_active=True
-        ).all()
+        user = get_current_user()
+        if not user:
+            return error_response(message='未登录或登录已过期', code=401)
+
+        tenants = get_user_accessible_tenants(user)
+
+        # 构建租户列表（包含角色信息）
+        tenant_list = []
+        for tenant in tenants:
+            tenant_dict = tenant.to_dict()
+            if user.is_super_admin():
+                tenant_dict['user_role'] = 'super_admin'
+                tenant_dict['user_role_name'] = '超级管理员'
+            else:
+                tenant_user = TenantUser.query.filter_by(
+                    tenant_id=tenant.id,
+                    user_id=user.id,
+                    is_deleted=False
+                ).first()
+                if tenant_user:
+                    tenant_dict['user_role'] = tenant_user.role
+                    role_names = {'owner': '所有者', 'admin': '管理员', 'member': '成员'}
+                    tenant_dict['user_role_name'] = role_names.get(tenant_user.role, tenant_user.role)
+            tenant_list.append(tenant_dict)
 
         return success_response(data={
-            'tenants': [tenant.to_dict() for tenant in tenants]
+            'tenants': tenant_list
         })
 
 
@@ -91,8 +137,14 @@ class AuthSelectTenantAPI(Resource):
     @auth_ns.expect(tenant_select_model)
     def post(self):
         """选择租户"""
+        from app.utils.permissions import get_current_user
+
         data = request.get_json()
         tenant_id = data.get('tenant_id')
+
+        user = get_current_user()
+        if not user:
+            return error_response(message='未登录或登录已过期', code=401)
 
         # 验证租户是否存在
         tenant = Tenant.query.filter_by(
@@ -104,10 +156,59 @@ class AuthSelectTenantAPI(Resource):
         if not tenant:
             return error_response(message='租户不存在或已停用', code=404)
 
-        # TODO: 验证用户是否有权访问该租户
+        # 验证用户是否有权访问该租户
+        if not user.is_super_admin():
+            tenant_user = TenantUser.query.filter_by(
+                tenant_id=tenant_id,
+                user_id=user.id,
+                is_deleted=False
+            ).first()
+            if not tenant_user:
+                return error_response(message='您无权访问该租户', code=403)
 
         # 设置当前租户
         g.tenant_id = tenant_id
         g.tenant = tenant
 
         return success_response(data=tenant.to_dict(), message='租户选择成功')
+
+
+@auth_ns.route('/current-user')
+class AuthCurrentUserAPI(Resource):
+    @auth_ns.doc('get_current_user')
+    def get(self):
+        """获取当前登录用户信息"""
+        from app.utils.permissions import get_current_user
+
+        user = get_current_user()
+        if not user:
+            return error_response(message='未登录或登录已过期', code=401)
+
+        # 获取用户可访问的租户列表
+        tenants = get_user_accessible_tenants(user)
+
+        # 构建租户列表
+        tenant_list = []
+        for tenant in tenants:
+            tenant_dict = tenant.to_dict()
+            if user.is_super_admin():
+                tenant_dict['user_role'] = 'super_admin'
+                tenant_dict['user_role_name'] = '超级管理员'
+            else:
+                tenant_user = TenantUser.query.filter_by(
+                    tenant_id=tenant.id,
+                    user_id=user.id,
+                    is_deleted=False
+                ).first()
+                if tenant_user:
+                    tenant_dict['user_role'] = tenant_user.role
+                    role_names = {'owner': '所有者', 'admin': '管理员', 'member': '成员'}
+                    tenant_dict['user_role_name'] = role_names.get(tenant_user.role, tenant_user.role)
+            tenant_list.append(tenant_dict)
+
+        # 构建用户信息
+        user_info = user.to_dict()
+        user_info['tenants'] = tenant_list
+        user_info['is_super_admin'] = user.is_super_admin()
+
+        return success_response(data=user_info)

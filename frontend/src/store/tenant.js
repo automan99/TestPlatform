@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { tenantApi } from '@/api/tenant'
+import { authApi } from '@/api/auth'
 
 export const useTenantStore = defineStore('tenant', () => {
   const currentTenant = ref(null)
@@ -8,7 +9,7 @@ export const useTenantStore = defineStore('tenant', () => {
 
   async function loadMyTenants() {
     try {
-      const res = await tenantApi.getMyTenants()
+      const res = await authApi.getMyTenants()
       tenantList.value = res.data?.tenants || []
       return res.data
     } catch (error) {
@@ -19,7 +20,7 @@ export const useTenantStore = defineStore('tenant', () => {
 
   async function setCurrentTenant(tenantId) {
     try {
-      const res = await tenantApi.switch(tenantId)
+      const res = await authApi.selectTenant(tenantId)
       currentTenant.value = res.data
       localStorage.setItem('currentTenantId', tenantId)
       return res.data

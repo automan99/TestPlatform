@@ -57,15 +57,16 @@ class TenantUser(db.Model):
     __tablename__ = 'tenant_users'
 
     id = db.Column(db.Integer, primary_key=True)
-    tenant_id = db.Column(db.Integer, db.ForeignKey('tenants.id'), nullable=False)
-    user_id = db.Column(db.Integer, nullable=False, comment='用户ID')
+    tenant_id = db.Column(db.Integer, db.ForeignKey('tenants.id'), nullable=False, comment='租户ID')
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, comment='用户ID')
     role = db.Column(db.String(20), default='member', comment='角色: owner-所有者, admin-管理员, member-成员')
     is_default = db.Column(db.Boolean, default=False, comment='是否默认租户')
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    is_deleted = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, comment='创建时间')
+    is_deleted = db.Column(db.Boolean, default=False, comment='是否删除')
 
     # 关联
-    tenant = db.relationship('Tenant', backref='tenant_users')
+    tenant = db.relationship('Tenant', backref=db.backref('tenant_users', lazy='dynamic'))
+    user = db.relationship('User', backref=db.backref('tenant_users', lazy='dynamic'))
 
     def to_dict(self):
         return {

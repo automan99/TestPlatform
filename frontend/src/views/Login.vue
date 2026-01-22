@@ -112,7 +112,8 @@ async function handleLogin() {
           password: form.password
         })
 
-        const { token, user, tenants } = loginRes.data
+        const { token, user } = loginRes.data
+        const tenants = user?.tenants || []
 
         // 保存token和用户信息
         localStorage.setItem('token', token)

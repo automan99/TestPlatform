@@ -13,6 +13,10 @@ class Config:
     # 密钥
     SECRET_KEY = os.getenv('SECRET_KEY') or 'dev-secret-key-change-in-production'
 
+    # JWT配置
+    JWT_SECRET_KEY = os.getenv('JWT_SECRET_KEY') or SECRET_KEY
+    JWT_ACCESS_TOKEN_EXPIRES = timedelta(days=7)
+
     # 数据库配置
     DB_TYPE = os.getenv('DB_TYPE', 'mysql')
     DB_HOST = os.getenv('DB_HOST', 'localhost')
