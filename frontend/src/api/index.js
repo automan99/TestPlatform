@@ -23,7 +23,7 @@ function serializeParams(params) {
 }
 
 const request = axios.create({
-  baseURL: '/api',
+  baseURL: import.meta.env.VITE_API_BASE_URL || '/api',
   timeout: 30000,
   paramsSerializer: serializeParams,
   headers: {
