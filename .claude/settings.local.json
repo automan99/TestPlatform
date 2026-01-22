@@ -19,7 +19,8 @@
       "Bash(flask db:*)",
       "Bash(cd:*)",
       "Bash(export:*)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(\" 2>&1 | grep -v \"INFO sqlalchemy \")"
     ]
   }
 }
