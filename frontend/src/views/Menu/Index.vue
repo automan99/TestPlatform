@@ -1,43 +1,35 @@
 <template>
-  <div class="menu-management">
-    <!-- Page Header -->
-    <div class="page-header">
-      <h1 class="page-title">{{ t('menu.title') }}</h1>
-      <p class="page-description">{{ t('menu.description') }}</p>
-    </div>
-
-    <!-- Action Bar -->
-    <div class="action-bar">
-      <div class="action-left">
-        <el-input
-          v-model="searchKeyword"
-          :placeholder="t('menu.searchPlaceholder')"
-          clearable
-          class="search-input"
-        >
-          <template #prefix>
-            <el-icon><Search /></el-icon>
-          </template>
-        </el-input>
-      </div>
-      <div class="action-right">
-        <el-button type="primary" @click="openCreateDialog">
-          <el-icon><Plus /></el-icon>
-          {{ t('menu.addMenu') }}
-        </el-button>
-        <el-button @click="expandAll">
-          <el-icon><DCaret /></el-icon>
-          {{ t('menu.expandAll') }}
-        </el-button>
-        <el-button @click="collapseAll">
-          <el-icon><CaretTop /></el-icon>
-          {{ t('menu.collapseAll') }}
-        </el-button>
-      </div>
-    </div>
-
-    <!-- Menu Table -->
-    <div class="table-container">
+  <div class="menu-page">
+    <el-card>
+      <template #header>
+        <div class="card-header">
+          <span>{{ t('menu.title') }}</span>
+          <div class="header-actions">
+            <el-input
+              v-model="searchKeyword"
+              :placeholder="t('menu.searchPlaceholder')"
+              clearable
+              style="width: 200px"
+            >
+              <template #prefix>
+                <el-icon><Search /></el-icon>
+              </template>
+            </el-input>
+            <el-button @click="expandAll">
+              <el-icon><DCaret /></el-icon>
+              {{ t('menu.expandAll') }}
+            </el-button>
+            <el-button @click="collapseAll">
+              <el-icon><CaretTop /></el-icon>
+              {{ t('menu.collapseAll') }}
+            </el-button>
+            <el-button type="primary" @click="openCreateDialog">
+              <el-icon><Plus /></el-icon>
+              {{ t('menu.addMenu') }}
+            </el-button>
+          </div>
+        </div>
+      </template>
       <el-table
         ref="menuTableRef"
         v-loading="loading"
@@ -47,6 +39,7 @@
         :expand-row-keys="expandedKeys"
         stripe
         class="data-table"
+        height="500"
       >
         <el-table-column prop="title" :label="t('menu.menuName')" min-width="200">
           <template #default="{ row }">
@@ -99,7 +92,7 @@
           </template>
         </el-table-column>
       </el-table>
-    </div>
+    </el-card>
 
     <!-- Menu Form Dialog -->
     <el-dialog
@@ -518,59 +511,26 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.menu-management {
+.menu-page {
   padding: var(--space-6);
-  background: var(--color-bg);
-  height: 100%;
-  overflow-y: auto;
+}
+
+.card-header {
   display: flex;
-  flex-direction: column;
-}
-
-.page-header {
-  margin-bottom: var(--space-6);
-  flex-shrink: 0;
-}
-
-.page-title {
-  font-family: var(--font-display);
-  font-size: 24px;
-  font-weight: 700;
-  color: var(--color-text);
-  margin-bottom: var(--space-2);
-}
-
-.page-description {
-  font-size: 14px;
-  color: var(--color-text-secondary);
-}
-
-.action-bar {
-  display: flex;
-  justify-content: space-between;
   align-items: center;
-  margin-bottom: var(--space-4);
-  gap: var(--space-4);
-  flex-shrink: 0;
+  justify-content: space-between;
 }
 
-.action-left,
-.action-right {
+.card-header > span {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.header-actions {
   display: flex;
   gap: var(--space-3);
-}
-
-.search-input {
-  width: 300px;
-}
-
-.table-container {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  flex: 1;
-  overflow: auto;
-  max-height: calc(100vh - 280px);
+  align-items: center;
 }
 
 .data-table {
