@@ -37,13 +37,8 @@ export default defineConfig(({ mode }) => {
       outDir: 'dist',
       assetsDir: 'assets',
       sourcemap: mode === 'development',
-      minify: 'terser',
-      terserOptions: {
-        compress: {
-          drop_console: mode === 'production',
-          drop_debugger: mode === 'production'
-        }
-      },
+      minify: 'esbuild',
+      target: 'es2015',
       rollupOptions: {
         output: {
           manualChunks: {
